@@ -28,7 +28,7 @@ func main() {
 				break
 			}
 			fmt.Println(chain[state].name)
-			time.Sleep(1000000000)
+			time.Sleep(time.Second)
 		}
 	} else {
 		fmt.Println(err)
