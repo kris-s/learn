@@ -14,7 +14,6 @@ def day_one(captcha):
     captcha = [int(c) for c in str(captcha)]
     total = 0
     for i, digit in enumerate(captcha):
-        value = digit
         doubled = captcha[:]
         doubled.extend(captcha[:])
         if digit == doubled[i+1]:
