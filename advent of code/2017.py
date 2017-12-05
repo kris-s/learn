@@ -63,6 +63,7 @@ def day_three(memory):
 
     return abs(x) + abs(y)
 
+
 def day_four(passphrases):
     valid = 0
     for phrase in passphrases.split('\n'):
@@ -73,3 +74,20 @@ def day_four(passphrases):
         if len(words) == len(word_set):
             valid += 1
     return valid
+
+
+def day_five(instructions):
+    instructions = [int(val) for val in instructions.split('\n')]
+
+    steps = 0
+    idx = 0
+
+    while True:
+        try:
+            jump = instructions[idx]
+            instructions[idx] += 1
+            idx += jump
+            steps += 1
+        except IndexError:
+            break
+    return steps
