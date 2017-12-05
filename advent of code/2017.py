@@ -62,3 +62,14 @@ def day_three(memory):
     x, y = grid[memory]
 
     return abs(x) + abs(y)
+
+def day_four(passphrases):
+    valid = 0
+    for phrase in passphrases.split('\n'):
+        words = phrase.split()
+        word_set = set(words)
+        if not words:
+            continue
+        if len(words) == len(word_set):
+            valid += 1
+    return valid
