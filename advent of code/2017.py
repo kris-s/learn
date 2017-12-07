@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 
+
 def day_one(captcha):
     captcha = [int(c) for c in str(captcha)]
     total = 0
@@ -90,4 +91,31 @@ def day_five(instructions):
             steps += 1
         except IndexError:
             break
+    return steps
+
+
+def day_six(banks):
+    banks = [int(val) for val in banks.split()]
+    steps = 0
+    seen = []
+
+    while True:
+        largest = max(banks)
+        index = banks.index(largest)
+        banks[index] = 0
+
+        for _ in range(largest):
+            if index < len(banks) - 1:
+                index += 1
+            else:
+                index = 0
+            banks[index] += 1
+
+        if banks in seen:
+            steps += 1
+            break
+        else:
+            steps += 1
+            seen.append(banks[:])
+
     return steps
