@@ -119,3 +119,28 @@ def day_six(banks):
             seen.append(banks[:])
 
     return steps
+
+
+def day_seven(structure):
+    tree = {}
+    values = []
+    for row in structure.split('\n'):
+        value = {'children': []}
+        for i, a in enumerate(row.split()):
+            if i == 0:
+                value['name'] = a
+            elif i == 1:
+                value['weight'] = a
+            elif i > 2:
+                value['children'].append(a.replace(',', ''))
+
+        values.append(value)
+
+    children = []
+    for c in [v['children'] for v in values]:
+        children.extend(c)
+
+    for value in values:
+        print(value)
+        if value['name'] not in children:
+            return value['name']
