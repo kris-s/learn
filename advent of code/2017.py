@@ -122,7 +122,6 @@ def day_six(banks):
 
 
 def day_seven(structure):
-    tree = {}
     values = []
     for row in structure.split('\n'):
         value = {'children': []}
@@ -133,7 +132,6 @@ def day_seven(structure):
                 value['weight'] = a
             elif i > 2:
                 value['children'].append(a.replace(',', ''))
-
         values.append(value)
 
     children = []
@@ -141,6 +139,5 @@ def day_seven(structure):
         children.extend(c)
 
     for value in values:
-        print(value)
         if value['name'] not in children:
             return value['name']
