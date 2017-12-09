@@ -141,3 +141,45 @@ def day_seven(structure):
     for value in values:
         if value['name'] not in children:
             return value['name']
+
+
+def day_eight(instructions):
+    def parse_op(op):
+        if op == '>':
+            return lambda x, y: x > y
+        elif op == '>=':
+            return lambda x, y: x >= y
+        elif op == '<':
+            return lambda x, y: x < y
+        elif op == '<=':
+            return lambda x, y: x <= y
+        elif op == '==':
+            return lambda x, y: x == y
+        elif op == '!=':
+            return lambda x, y: x != y
+
+    commands = []
+    registers = {}
+
+    for row in instructions.split('\n'):
+        name, sign, scalar, _, dependent, operation, trigger  = row.split()
+        registers[name] = 0
+        commands.append({
+            'name': name,
+            'scalar': int(scalar),
+            'sign': sign,
+            'dependent': dependent,
+            'operation': parse_op(operation),
+            'raw_op': operation,
+            'trigger': int(trigger)
+        })
+
+    for c in commands:
+        operation = c['operation']
+        if operation(registers[c['dependent']], c['trigger']):
+            if c['sign'] == 'inc':
+                registers[c['name']] += c['scalar']
+            elif c['sign'] == 'dec':
+                registers[c['name']] -= c['scalar']
+
+    return max(registers.values())
