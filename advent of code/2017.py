@@ -182,3 +182,27 @@ def day_eight(instructions):
                 registers[name] -= scalar
 
     return max(registers.values())
+
+def day_nine(stream):
+    score = 0
+    depth = 0
+    open_garbage = False
+    cancel_next = False
+
+    for c in stream:
+        if cancel_next:
+            cancel_next = False
+            continue
+        elif c == '{' and not open_garbage:
+            depth += 1
+        elif c == '}' and not open_garbage:
+            score += depth
+            depth -= 1
+        elif c == '<':
+            open_garbage = True
+        elif c == '>' and open_garbage:
+            open_garbage = False
+        elif c == '!':
+            cancel_next = True
+
+    return score
