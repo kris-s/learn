@@ -164,22 +164,21 @@ def day_eight(instructions):
     for row in instructions.split('\n'):
         name, sign, scalar, _, dependent, operation, trigger  = row.split()
         registers[name] = 0
-        commands.append({
-            'name': name,
-            'scalar': int(scalar),
-            'sign': sign,
-            'dependent': dependent,
-            'operation': parse_op(operation),
-            'raw_op': operation,
-            'trigger': int(trigger)
-        })
+        commands.append((
+            name,
+            int(scalar),
+            sign == 'inc',
+            dependent,
+            parse_op(operation),
+            int(trigger)
+        ))
 
     for c in commands:
-        operation = c['operation']
-        if operation(registers[c['dependent']], c['trigger']):
-            if c['sign'] == 'inc':
-                registers[c['name']] += c['scalar']
-            elif c['sign'] == 'dec':
-                registers[c['name']] -= c['scalar']
+        name, scalar, sign, dependent, operation, trigger = c
+        if operation(registers[dependent], trigger):
+            if sign:
+                registers[name] += scalar
+            else:
+                registers[name] -= scalar
 
     return max(registers.values())
