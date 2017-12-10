@@ -183,6 +183,7 @@ def day_eight(instructions):
 
     return max(registers.values())
 
+
 def day_nine(stream):
     score = 0
     depth = 0
