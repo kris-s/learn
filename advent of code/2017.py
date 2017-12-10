@@ -211,21 +211,19 @@ def day_nine(stream):
 
 def day_ten(input):
     skip = 0
-    total_rotations = 0
+    total_rotation = 0
 
     commands = [int(val) for val in input.split(',')]
     knot = [i for i in range(256)]
 
     for c in commands:
-        selection = knot[:c]
-        selection = list(reversed(selection))
-        knot = selection + knot[c:]
-        pos = (c + skip) % len(knot)
-        knot = knot[pos:] + knot[:pos]
-        total_rotations += c + skip
+        knot = list(reversed(knot[:c])) + knot[c:]
+        rotate = (c + skip) % len(knot)
+        knot = knot[rotate:] + knot[:rotate]
+        total_rotation += c + skip
         skip += 1
 
-    unwind = len(knot) - total_rotations % len(knot)
+    unwind = len(knot) - total_rotation % len(knot)
     knot = knot[unwind:] + knot[:unwind]
 
-    return(knot[0] * knot[1])
+    return knot[0] * knot[1]
