@@ -227,3 +227,33 @@ def day_ten(input):
     knot = knot[unwind:] + knot[:unwind]
 
     return knot[0] * knot[1]
+
+
+def day_eleven(moves):
+    moves = moves.split(',')
+    position = (0, 0)
+
+    deltas = {
+        'nw': (-1, 0),
+        'n': (0, -1),
+        'ne': (1, -1),
+        'sw': (-1, 1),
+        's': (0, 1),
+        'se': (1, 0)}
+
+    for move in moves:
+        x, y = position
+        dx, dy = deltas[move]
+        position = (x + dx, y + dy)
+
+    x, y = position
+
+    if x > 0 and y > 0:
+        steps = x + y
+    elif x < 0 and y < 0:
+        steps = abs(x) + abs(y)
+    else:
+        absolute = abs(x), abs(y)
+        steps = max(absolute)
+
+    return steps
