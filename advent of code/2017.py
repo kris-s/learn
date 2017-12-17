@@ -280,3 +280,48 @@ def day_twelve(programs):
             zero_neighbors += 1
 
     return zero_neighbors
+
+
+def day_thirteen(firewall):
+    SECURITY_BOT = 'security bot'
+    field = {}
+    for layer in firewall.split('\n'):
+        layer_id, depth = layer.split(':')
+        layer_id = int(layer_id)
+        depth = int(depth)
+        depth = [None for d in range(depth)]
+        depth[0] = SECURITY_BOT
+        field[layer_id] = {
+            'depth': depth,
+            'going_down': True
+        }
+
+    trip_severity = 0
+    for i in range(max(field.keys()) + 1):
+        if i in field.keys() and field[i]['depth'][0] == SECURITY_BOT:
+            trip_severity += i * len(field[i]['depth'])
+
+        for k, v in field.items():
+            layer = v['depth']
+            going_down = v['going_down']
+            scanner_idx = layer.index(SECURITY_BOT)
+            if going_down:
+                if scanner_idx == len(layer) - 1:
+                    next_idx = scanner_idx - 1
+                    going_down = False
+                else:
+                    next_idx = scanner_idx + 1
+            else:
+                if scanner_idx == 0:
+                    next_idx = scanner_idx + 1
+                    going_down = True
+                else:
+                    next_idx = scanner_idx - 1
+
+            layer[scanner_idx] = None
+            layer[next_idx] = SECURITY_BOT
+
+            field[k]['depth'] = layer
+            field[k]['going_down'] = going_down
+
+    return trip_severity
