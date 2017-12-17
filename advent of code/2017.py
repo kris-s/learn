@@ -257,3 +257,26 @@ def day_eleven(moves):
         steps = max(absolute)
 
     return steps
+
+
+def day_twelve(programs):
+    village = {}
+    for program in programs.split('\n'):
+        p_id, pipes = program.split(' <-> ')
+        p_id = int(p_id)
+        pipes = [int(p) for p in pipes.split(',')]
+        village[p_id] = pipes
+
+    def get_connections(villager, seen):
+        seen.add(villager)
+        for v in village[villager]:
+            if v not in seen:
+                seen.union(v2 for v2 in get_connections(v, seen))
+        return seen
+
+    zero_neighbors = 0
+    for villager in village.keys():
+        if 0 in get_connections(villager, set()):
+            zero_neighbors += 1
+
+    return zero_neighbors
