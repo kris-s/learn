@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -49,6 +49,4 @@ func dayOneB(input string) int {
 			}
 		}
 	}
-
-	return freq
 }
