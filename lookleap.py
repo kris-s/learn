@@ -1,3 +1,4 @@
+#!/usr/local/bin/python2
 from datetime import datetime
 from random import random, choice
 
@@ -71,5 +72,3 @@ print "Leap first with try and getattr: {}".format(datetime.now() - start)
 start = datetime.now()
 leap_first_getattr_default(entities)
 print "Leap first with getattr default: {}\n".format(datetime.now() - start)
-
-# TODO: test entities with mostly anon and mostly named
