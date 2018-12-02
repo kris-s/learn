@@ -77,6 +77,7 @@ func dayTwoB(input string) string {
 			if variance == 1 {
 				matches[0] = id1
 				matches[1] = id2
+				break
 			} else {
 				continue
 			}
