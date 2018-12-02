@@ -82,7 +82,6 @@ func dayTwoB(input string) string {
 			} else {
 				continue
 			}
-
 		}
 	}
 
