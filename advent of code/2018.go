@@ -13,8 +13,96 @@ func main() {
 	// fmt.Println(dayOneA(dayOneInput))
 	// fmt.Println(dayOneB(dayOneInput))
 
-	fmt.Println(dayTwoA(dayTwoInput))
-	fmt.Println(dayTwoB(dayTwoInput))
+	// fmt.Println(dayTwoA(dayTwoInput))
+	// fmt.Println(dayTwoB(dayTwoInput))
+
+	fmt.Println(dayThree(dayThreeInput))
+}
+
+func dayThree(input string) (int, string) {
+	type Claim struct {
+		Id                       string
+		Left, Right, Top, Bottom int
+	}
+
+	maxRight, maxDown := 0, 0
+	claims := []Claim{}
+
+	for _, sc := range strings.Split(input, "--") {
+		c := Claim{}
+		_, _ = fmt.Sscanf(sc, "#%s @ %d,%d: %dx%d", &c.Id, &c.Left, &c.Top, &c.Right, &c.Bottom)
+		c.Right += c.Left
+		c.Bottom += c.Top
+
+		if c.Right > maxRight {
+			maxRight = c.Right
+		}
+
+		if c.Bottom > maxDown {
+			maxDown = c.Bottom
+		}
+
+		claims = append(claims, c)
+	}
+
+	overlaps := 0
+	fabric := [][]int{}
+	for i := 0; i < maxDown; i++ {
+		row := []int{}
+		for j := 0; j < maxRight; j++ {
+			count := 0
+			for _, claim := range claims {
+				if claim.Top <= i && i < claim.Bottom && claim.Left <= j && j < claim.Right {
+					count++
+				}
+			}
+			if count > 1 {
+				overlaps++
+			}
+			row = append(row, count)
+		}
+		fabric = append(fabric, row)
+	}
+
+	claimsOverlap := func(c1, c2 Claim) bool {
+		clearVert := false
+		clearHoriz := false
+
+		if c1.Top > c2.Top {
+			clearVert = c1.Top >= c2.Bottom
+		} else {
+			clearVert = c1.Bottom <= c2.Top
+		}
+
+		if c1.Left < c2.Left {
+			clearHoriz = c1.Right <= c2.Left
+		} else {
+			clearHoriz = c1.Left >= c2.Right
+		}
+		return !(clearHoriz || clearVert)
+	}
+
+	clean := ""
+	for i, c1 := range claims {
+		checked := 0
+		for j, c2 := range claims {
+			checked++
+			if i == j {
+				continue
+			}
+
+			if claimsOverlap(c1, c2) {
+				break
+			}
+
+			if checked+1 == len(claims) {
+				clean = c1.Id
+				break
+			}
+		}
+	}
+
+	return overlaps, clean
 }
 
 func dayTwoA(input string) int {
