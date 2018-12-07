@@ -5,18 +5,111 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	// "time"
+	"sort"
 )
 
 func main() {
 	fmt.Println("It's time to save Christmas. 🎄")
 
-	// fmt.Println(dayOneA(dayOneInput))
-	// fmt.Println(dayOneB(dayOneInput))
+	dayFour(dayFourInput)
 
+	// fmt.Println(dayThree(dayThreeInput))
 	// fmt.Println(dayTwoA(dayTwoInput))
 	// fmt.Println(dayTwoB(dayTwoInput))
+	// fmt.Println(dayOneA(dayOneInput))
+	// fmt.Println(dayOneB(dayOneInput))
+}
 
-	fmt.Println(dayThree(dayThreeInput))
+func dayFour(input string) {
+	logs := strings.Split(input, "\n")
+	sort.Strings(logs)
+
+	guardHabits := make(map[string][60]int)
+	currentGuard := ""
+	start := 0
+	end := 0
+
+	for _, log := range logs {
+
+		if strings.Contains(log, "Guard") {
+			currentGuard = strings.Split(log, "]")[1]
+			start = 0
+			end = 0
+
+			_, ok := guardHabits[currentGuard]
+			if !ok {
+				guardHabits[currentGuard] = [60]int{}
+			}
+		} else if strings.Contains(log, "falls asleep") {
+			startS := strings.Split(log, ":")[1]
+			startS = strings.Split(startS, "]")[0]
+			start, _ = strconv.Atoi(startS)
+		} else if strings.Contains(log, "wakes up") {
+			endS := strings.Split(log, ":")[1]
+			endS = strings.Split(endS, "]")[0]
+			end, _ = strconv.Atoi(endS)
+
+			for j := start; j < end; j++ {
+				habits := guardHabits[currentGuard]
+				habits[j]++
+				guardHabits[currentGuard] = habits
+			}
+		}
+	}
+
+	sleepiestGuard := ""
+	sleepiestMinute := 0
+	max := 0
+
+	sumInts := func(ints [60]int) int {
+		total := 0
+		for _, v := range ints {
+			total += v
+		}
+		return total
+	}
+
+	for k, v := range guardHabits {
+		total := sumInts(v)
+		if total > max {
+			max = total
+			sleepiestGuard = k
+		}
+	}
+
+	max = 0
+	sleepTimes := guardHabits[sleepiestGuard]
+	for i, m := range sleepTimes {
+		if m > max {
+			max = m
+			sleepiestMinute = i
+		}
+	}
+
+	sleepiestGuard = strings.Split(sleepiestGuard, "#")[1]
+	sleepiestGuard = strings.Split(sleepiestGuard, " begins")[0]
+	guardId, _ := strconv.Atoi(sleepiestGuard)
+
+	fmt.Println("Strategy 1:", guardId*sleepiestMinute)
+
+	max = 0
+	for k, v := range guardHabits {
+		for i, m := range v {
+			if m > max {
+				max = m
+				sleepiestMinute = i
+				sleepiestGuard = k
+			}
+		}
+	}
+
+	sleepiestGuard = strings.Split(sleepiestGuard, "#")[1]
+	sleepiestGuard = strings.Split(sleepiestGuard, " begins")[0]
+	guardId, _ = strconv.Atoi(sleepiestGuard)
+
+	fmt.Println("Strategy 2:", guardId*sleepiestMinute)
+
 }
 
 func dayThree(input string) (int, string) {
