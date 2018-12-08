@@ -3,22 +3,80 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
-	// "time"
-	"sort"
 )
 
 func main() {
 	fmt.Println("It's time to save Christmas. 🎄")
 
-	dayFour(dayFourInput)
+	dayFive(dayFiveInput)
 
+	// dayFour(dayFourInput)
 	// fmt.Println(dayThree(dayThreeInput))
 	// fmt.Println(dayTwoA(dayTwoInput))
 	// fmt.Println(dayTwoB(dayTwoInput))
 	// fmt.Println(dayOneA(dayOneInput))
 	// fmt.Println(dayOneB(dayOneInput))
+}
+
+func dayFive(input string) {
+	polymer := []byte(input)
+
+	react := func(polymer []byte) int {
+		i := 0
+
+		for i < len(polymer)-2 {
+
+			var diff byte
+
+			if polymer[i] > polymer[i+1] {
+				diff = polymer[i] - polymer[i+1]
+			} else {
+				diff = polymer[i+1] - polymer[i]
+			}
+
+			if diff == 32 {
+				if i+2 < len(polymer) {
+					polymer = append(polymer[:i], polymer[i+2:]...)
+				} else {
+					polymer = polymer[:i]
+				}
+				if i > 0 {
+					i--
+				}
+			} else {
+				i++
+			}
+		}
+		return len(polymer)
+	}
+
+	fmt.Println("Part 1:", react(polymer))
+
+	table := make(map[string]int)
+
+	// A = 65
+	alphabet := []string{
+		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
+	for _, letter := range alphabet {
+		reduced := strings.Replace(input, letter, "", -1)
+		reduced = strings.Replace(reduced, strings.ToLower(letter), "", -1)
+		reducedPolymer := []byte(reduced)
+		table[letter] = react(reducedPolymer)
+	}
+
+	min := 10000
+	best := ""
+	for k, v := range table {
+		if v < min {
+			min = v
+			best = k
+		}
+	}
+	fmt.Println("Part 2:", best, min)
 }
 
 func dayFour(input string) {
