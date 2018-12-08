@@ -11,14 +11,132 @@ import (
 func main() {
 	fmt.Println("It's time to save Christmas. 🎄")
 
-	dayFive(dayFiveInput)
-
+	daySix(daySixInput)
+	// dayFive(dayFiveInput)
 	// dayFour(dayFourInput)
 	// fmt.Println(dayThree(dayThreeInput))
 	// fmt.Println(dayTwoA(dayTwoInput))
 	// fmt.Println(dayTwoB(dayTwoInput))
 	// fmt.Println(dayOneA(dayOneInput))
 	// fmt.Println(dayOneB(dayOneInput))
+}
+
+func daySix(input string) {
+	type Point struct {
+		x, y int
+		name string
+	}
+
+	points := []Point{}
+	grid := [500][500]string{}
+
+	for y, row := range grid {
+		for x, _ := range row {
+			grid[y][x] = "."
+		}
+	}
+
+	for i, p := range strings.Split(input, "\n") {
+		point := Point{}
+		fmt.Sscanf(p, "%d, %d", &point.x, &point.y)
+		point.name = fmt.Sprintf("p%d", i)
+		points = append(points, point)
+		grid[point.y][point.x] = point.name
+
+	}
+
+	abs := func(n int) int {
+		if n < 0 {
+			return -n
+		}
+		return n
+	}
+
+	sum := func(nums []int) int {
+		total := 0
+		for _, n := range nums {
+			total += n
+		}
+		return total
+	}
+
+	manhattanDistance := func(a, b Point) int {
+		return abs(a.x-b.x) + abs(a.y-b.y)
+	}
+
+	pointOwner := func(points []Point, point Point) string {
+		distances := make(map[Point]int)
+		for _, p := range points {
+			distances[p] = manhattanDistance(p, point)
+		}
+
+		min := 100000
+		owner := ""
+		for k, v := range distances {
+			if v < min {
+				min = v
+				owner = k.name
+			}
+		}
+
+		for k, v := range distances {
+			if k.name == owner {
+				continue
+			}
+
+			if v == min {
+				owner = ".."
+			}
+		}
+		return owner
+	}
+
+	for y, row := range grid {
+		for x, _ := range row {
+			grid[y][x] = strings.ToLower(pointOwner(points, Point{x, y, ""}))
+		}
+	}
+
+	scores := make(map[string]int)
+	for y, row := range grid {
+		for x, _ := range row {
+			if x == 0 || y == 0 || x == len(row)-1 || y == len(grid)-1 {
+				scores[grid[y][x]] = -1
+			} else if scores[grid[y][x]] < 0 {
+				continue
+			} else {
+				scores[grid[y][x]]++
+			}
+		}
+	}
+
+	max := 0
+	winner := ""
+	for k, v := range scores {
+		if v > max {
+			max = v
+			winner = k
+		}
+	}
+
+	fmt.Println("Part 1:", winner, max)
+
+	regionSize := 0
+	for y, row := range grid {
+		for x, _ := range row {
+			distances := []int{}
+			point := Point{x, y, ""}
+			for _, p := range points {
+				distances = append(distances, manhattanDistance(p, point))
+			}
+			if sum(distances) < 10000 {
+				regionSize++
+			}
+
+		}
+	}
+
+	fmt.Println("Part 2:", regionSize)
 }
 
 func dayFive(input string) {
