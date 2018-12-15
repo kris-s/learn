@@ -11,7 +11,9 @@ import (
 func main() {
 	fmt.Println("It's time to save Christmas. 🎄")
 
-	daySix(daySixInput)
+	daySeven(daySevenInput)
+
+	// daySix(daySixInput)
 	// dayFive(dayFiveInput)
 	// dayFour(dayFourInput)
 	// fmt.Println(dayThree(dayThreeInput))
@@ -19,6 +21,165 @@ func main() {
 	// fmt.Println(dayTwoB(dayTwoInput))
 	// fmt.Println(dayOneA(dayOneInput))
 	// fmt.Println(dayOneB(dayOneInput))
+}
+
+func daySeven(input string) {
+	stepNames := []string{}
+	steps := make(map[string][]string)
+
+	contains := func(items []string, s string) bool {
+		for _, element := range items {
+			if s == element {
+				return true
+			}
+		}
+		return false
+	}
+
+	removeValue := func(items []string, s string) []string {
+		newList := []string{}
+		for _, element := range items {
+			if element != s {
+				newList = append(newList, element)
+			}
+		}
+		return newList
+	}
+
+	updateReqs := func(steps map[string][]string, completed string) {
+		for k, v := range steps {
+			if contains(v, completed) {
+				steps[k] = removeValue(v, completed)
+			}
+		}
+	}
+
+	for _, s := range strings.Split(input, "\n") {
+		var req, step string
+		fmt.Sscanf(s, "Step %s must be finished before step %s can begin.", &req, &step)
+		_, ok := steps[step]
+		if ok {
+			steps[step] = append(steps[step], req)
+		} else {
+			steps[step] = []string{req}
+		}
+
+		if !contains(stepNames, req) {
+			stepNames = append(stepNames, req)
+		}
+
+		if !contains(stepNames, step) {
+			stepNames = append(stepNames, step)
+		}
+	}
+
+	sort.Strings(stepNames)
+	fmt.Println(stepNames)
+
+	order := []string{}
+	steps2 := make(map[string][]string)
+
+	// make a copy for part 2
+	for k, v := range steps {
+		steps2[k] = v
+	}
+
+	fmt.Println("start order:", order)
+	fmt.Println("start reqs:")
+	for k, v := range steps {
+		fmt.Println(k, v)
+	}
+
+	for len(order) != len(stepNames) {
+		for _, stepName := range stepNames {
+			if contains(order, stepName) {
+				continue
+			}
+			reqs, ok := steps[stepName]
+			if !ok || len(reqs) == 0 {
+				order = append(order, stepName)
+				updateReqs(steps, stepName)
+				break
+			}
+
+		}
+	}
+	fmt.Println("Part 1:", strings.Join(order, ""))
+
+	workTime := func(name string) int {
+		// assumes all uppercase letters
+		return int(name[0]-64) + 60
+	}
+
+	type Worker struct {
+		workload int
+		stepName string
+	}
+
+	workers := []Worker{}
+	numWorkers := 5
+	for i := 0; i < numWorkers; i++ {
+		workers = append(workers, Worker{0, "."})
+	}
+
+	for _, name := range order {
+		fmt.Println(workTime(name))
+	}
+
+	worklist := make([]string, len(stepNames))
+	copy(worklist, stepNames)
+
+	nextStep := func() (int, string, error) {
+		if len(worklist) == 0 {
+			return 0, "", fmt.Errorf("No more steps")
+		}
+
+		for _, stepName := range worklist {
+			reqs, ok := steps2[stepName]
+			if !ok || len(reqs) == 0 {
+				worklist = removeValue(worklist, stepName)
+				sort.Strings(worklist)
+				fmt.Println("worklist:", worklist)
+				return workTime(stepName), stepName, nil
+			}
+		}
+
+		return 0, "", fmt.Errorf("blocked")
+	}
+
+	tick := 0
+
+	printTick := func() {
+		fmt.Printf("%d ", tick)
+		for _, w := range workers {
+			fmt.Printf("%s ", w.stepName)
+		}
+		fmt.Printf("\n")
+	}
+
+	for len(worklist) > 0 {
+		for i, _ := range workers {
+			if workers[i].workload == 0 {
+				if workers[i].stepName != "." {
+					updateReqs(steps2, workers[i].stepName)
+				}
+				workload, stepName, err := nextStep()
+				if err == nil {
+					workers[i].workload = workload
+					workers[i].stepName = stepName
+				} else {
+					workers[i].workload = 0
+					workers[i].stepName = "."
+				}
+			}
+			if workers[i].workload > 0 {
+				workers[i].workload--
+			}
+		}
+		printTick()
+		tick++
+	}
+	fmt.Println("Part 2 tick:", tick, "workers:", workers)
 }
 
 func daySix(input string) {
