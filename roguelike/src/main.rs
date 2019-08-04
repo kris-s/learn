@@ -6,6 +6,7 @@ use rand::Rng;
 
 use tcod::colors::{self, Color};
 use tcod::console::*;
+use tcod::map::{FovAlgorithm, Map as FovMap};
 
 
 const SCREEN_WIDTH: i32 = 80;
@@ -19,8 +20,14 @@ const ROOM_MAX_SIZE: i32 = 10;
 const ROOM_MIN_SIZE: i32 = 6;
 const MAX_ROOMS: i32 = 30;
 
+const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic;
+const FOV_LIGHT_WALLS: bool = true;
+const TORCH_RADIUS: i32 = 10;
+
 const COLOR_DARK_WALL: Color = Color {r: 0, g: 0, b: 100};
+const COLOR_LIGHT_WALL: Color = Color {r: 130, g: 110, b: 50};
 const COLOR_DARK_GROUND: Color = Color {r: 50, g: 50, b: 150};
+const COLOR_LIGHT_GROUND: Color = Color {r: 200, g: 180, b: 50};
 
 
 #[derive(Debug)]
@@ -95,15 +102,16 @@ fn make_map() -> (Map, (i32, i32)) {
 struct Tile {
     blocked: bool,
     block_sight: bool,
+    explored: bool,
 }
 
 impl Tile {
     pub fn empty() -> Self {
-        Tile{blocked: false, block_sight: false}
+        Tile{blocked: false, block_sight: false, explored: false}
     }
 
     pub fn wall() -> Self {
-        Tile{blocked: true, block_sight: true}
+        Tile{blocked: true, block_sight: true, explored: false}
     }
 }
 
@@ -160,6 +168,8 @@ fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
 
 
 fn main() {
+    tcod::system::set_fps(LIMIT_FPS);
+
     let mut root = Root::initializer()
         .font("arial10x10.png", FontLayout::Tcod)
         .font_type(FontType::Greyscale)
@@ -169,19 +179,39 @@ fn main() {
 
     let mut con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
 
-    tcod::system::set_fps(LIMIT_FPS);
+    let (mut map, (player_x, player_y)) = make_map();
 
-    let (map, (player_x, player_y)) = make_map();
+    let mut fov_map = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
+            fov_map.set(
+                x,
+                y,
+                !map[x as usize][y as usize].block_sight,
+                !map[x as usize][y as usize].blocked,
+            );
+        }
+    }
 
     let player = Object::new(player_x, player_y, '@', colors::WHITE);
+    let mut previous_player_position = (-1, -1);
     let mut objects = [player];
 
     while !root.window_closed() {
         con.clear();
-        render_all(&mut root, &mut con, &objects, &map);
+        let fov_recompute = previous_player_position != (objects[0].x, objects[0].y);
+        render_all(
+            &mut root,
+            &mut con,
+            &objects,
+            &mut map,
+            &mut fov_map,
+            fov_recompute,
+        );
         root.flush();
 
         let player = &mut objects[0];
+        previous_player_position = (player.x, player.y);
         let exit = handle_keys(&mut root, player, &map);
         if exit {
             break
@@ -210,18 +240,37 @@ fn handle_keys(root: &mut Root, player: &mut Object, map: &Map) -> bool {
     false
 }
 
-fn render_all(root: &mut Root, con: &mut Offscreen, objects: &[Object], map: &Map) {
+fn render_all(root: &mut Root, con: &mut Offscreen, objects: &[Object], map: &mut Map, fov_map: &mut FovMap, fov_recompute: bool) {
+    if fov_recompute {
+        let player = &objects[0];
+        fov_map.compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
+    }
+
     for object in objects {
-        object.draw(con);
+        if fov_map.is_in_fov(object.x, object.y) {
+            object.draw(con);
+        }
     }
 
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
+            let visible = fov_map.is_in_fov(x, y);
             let wall = map[x as usize][y as usize].block_sight;
-            if wall {
-                con.set_char_background(x, y, COLOR_DARK_WALL, BackgroundFlag::Set);
-            } else {
-                con.set_char_background(x, y, COLOR_DARK_GROUND, BackgroundFlag::Set);
+            let explored = &mut map[x as usize][y as usize].explored;
+            let color = match (visible, wall) {
+                // outside fov
+                (false, true) => COLOR_DARK_WALL,
+                (false, false) => COLOR_DARK_GROUND,
+                // inside fov
+                (true, true) => COLOR_LIGHT_WALL,
+                (true, false) => COLOR_LIGHT_GROUND,
+            };
+
+            if visible {
+                *explored = true;
+            }
+            if *explored {
+                con.set_char_background(x, y, color, BackgroundFlag::Set);
             }
         }
     }
