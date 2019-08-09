@@ -203,7 +203,7 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
                 Object::new(x, y, 'g', "goblin", colors::DESATURATED_GREEN, true)
             } else {
                 // orc
-                Object::new(x, y, 'o', "ord", colors::DARKER_GREEN, true)
+                Object::new(x, y, 'o', "orc", colors::DARKER_GREEN, true)
             };
 
             monster.alive = true;
@@ -229,6 +229,25 @@ fn move_by(id: usize, dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     let (x, y) = objects[id].pos();
     if !is_blocked(x + dx, y + dy, map, objects) {
         objects[id].set_pos(x + dx, y + dy);
+    }
+}
+
+fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
+    let x = objects[PLAYER].x + dx;
+    let y = objects[PLAYER].y + dy;
+
+    // check for an attackable at the destination
+    let target_id = objects.iter().position(|object| object.pos() == (x, y));
+    match target_id {
+        Some(target_id) => {
+            println!(
+                "The {} laughs at your puny efforts to attack it!",
+                objects[target_id].name
+            );
+        }
+        None => {
+            move_by(PLAYER, dx, dy, map, objects);
+        }
     }
 }
 
@@ -282,6 +301,15 @@ fn main() {
         if player_action == PlayerAction::Exit {
             break
         }
+
+        if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
+            for object in &objects {
+                // only if object isn't the player
+                if (object as *const _) != (&objects[PLAYER] as *const _) {
+                    //
+                }
+            }
+        }
     }
 }
 
@@ -302,19 +330,19 @@ fn handle_keys(root: &mut Root, map: &Map, objects: &mut [Object]) -> PlayerActi
         }
         (Key { code: Escape, .. }, _) => Exit,
         (Key { code: Up, .. }, true) => {
-            move_by(PLAYER, 0, -1, map, objects);
+            player_move_or_attack(0, -1, map, objects);
             TookTurn
         }
         (Key { code: Down, .. }, true) => {
-            move_by(PLAYER, 0, 1, map, objects);
+            player_move_or_attack(0, 1, map, objects);
             TookTurn
         }
         (Key { code: Left, .. }, true) => {
-            move_by(PLAYER, -1, 0, map, objects);
+            player_move_or_attack(-1, 0, map, objects);
             TookTurn
         }
         (Key { code: Right, .. }, true) => {
-            move_by(PLAYER, 1, 0, map, objects);
+            player_move_or_attack(1, 0, map, objects);
             TookTurn
         }
         _ => DidntTakeTurn,
