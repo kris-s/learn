@@ -48,6 +48,8 @@ struct Object {
     blocks: bool,
     alive: bool,
     color: Color,
+    fighter: Option<Fighter>,
+    ai: Option<Ai>,
 }
 
 impl Object {
@@ -60,6 +62,8 @@ impl Object {
             color: color,
             blocks: blocks,
             alive: false,
+            fighter: None,
+            ai: None,
         }
     }
 
@@ -75,6 +79,12 @@ impl Object {
     pub fn set_pos(&mut self, x: i32, y: i32) {
         self.x = x;
         self.y = y;
+    }
+
+    pub fn distance_to(&self, other: &Object) -> f32 {
+        let dx = other.x - self.x;
+        let dy = other.y - self.y;
+        ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
     }
 
 }
@@ -170,6 +180,17 @@ impl Rect {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Fighter {
+    max_hp: i32,
+    hp: i32,
+    defense: i32,
+    power: i32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Ai;
+
 fn create_room(room: Rect, map: &mut Map) {
     for x in (room.x1 + 1)..room.x2 {
         for y in (room.y1 + 1)..room.y2 {
@@ -199,15 +220,31 @@ fn place_objects(room: Rect, map: &Map, objects: &mut Vec<Object>) {
 
         if !is_blocked(x, y, map, objects) {
             // 80% chance of goblin
-            let mut monster = if rand::random::<f32>() < 0.8 {
-                Object::new(x, y, 'g', "goblin", colors::DESATURATED_GREEN, true)
+            if rand::random::<f32>() < 0.8 {
+                // goblin
+                let mut goblin = Object::new(x, y, 'g', "goblin", colors::DESATURATED_GREEN, true);
+                goblin.fighter = Some(Fighter {
+                    max_hp: 10,
+                    hp: 10,
+                    defense: 0,
+                    power: 3,
+                });
+                goblin.ai = Some(Ai);
+                goblin.alive = true;
+                objects.push(goblin);
             } else {
                 // orc
-                Object::new(x, y, 'o', "orc", colors::DARKER_GREEN, true)
-            };
-
-            monster.alive = true;
-            objects.push(monster);
+                let mut orc = Object::new(x, y, 'o', "orc", colors::DARKER_GREEN, true);
+                orc.fighter = Some(Fighter {
+                    max_hp: 16,
+                    hp: 16,
+                    defense: 1,
+                    power: 4,
+                });
+                orc.ai = Some(Ai);
+                orc.alive = true;
+                objects.push(orc);
+            }
         }
     }
 }
@@ -251,10 +288,48 @@ fn player_move_or_attack(dx: i32, dy: i32, map: &Map, objects: &mut [Object]) {
     }
 }
 
+fn move_towards(id: usize, target_x: i32, target_y: i32, map: &Map, objects: &mut [Object]) {
+    // vector from this object to the target
+    let dx = target_x - objects[id].x;
+    let dy = target_y - objects[id].y;
+    let distance = ((dx.pow(2) + dy.pow(2)) as f32).sqrt();
+
+    // normalize vector, round it and convert back to int for grid movement
+    let dx = (dx as f32 / distance).round() as i32;
+    let dy = (dy as f32 / distance).round() as i32;
+    move_by(id, dx, dy, map, objects);
+}
+
+fn ai_take_turn(monster_id: usize, map: &Map, objects: &mut [Object], fov_map: &FovMap) {
+    // a basic monster takes its turn, if you can see it, it can see you
+    let (monster_x, monster_y) = objects[monster_id].pos();
+    if fov_map.is_in_fov(monster_x, monster_y) {
+        // move towards the player if far away
+        if objects[monster_id].distance_to(&objects[PLAYER]) >= 2.0 {
+            let (player_x, player_y) = objects[PLAYER].pos();
+            move_towards(monster_id, player_x, player_y, map, objects);
+        // close enough to attack!
+        } else if objects[PLAYER].fighter.map_or(false, |f| f.hp > 0) {
+            let monster = &objects[monster_id];
+            println!("The attack of {} bounces off your sturdy armor!", monster.name);
+        }
+    }
+}
+
+
 fn main() {
     tcod::system::set_fps(LIMIT_FPS);
+    // make the player
     let mut player = Object::new(1, 1, '@', "player", colors::WHITE, true);
     player.alive = true;
+    player.fighter = Some(Fighter {
+        max_hp: 30,
+        hp: 30,
+        defense: 2,
+        power: 5,
+    });
+
+
     let mut objects = vec![player];
 
     let mut root = Root::initializer()
@@ -303,10 +378,9 @@ fn main() {
         }
 
         if objects[PLAYER].alive && player_action != PlayerAction::DidntTakeTurn {
-            for object in &objects {
-                // only if object isn't the player
-                if (object as *const _) != (&objects[PLAYER] as *const _) {
-                    //
+            for id in 0..objects.len() {
+                if objects[id].ai.is_some() {
+                    ai_take_turn(id, &map, &mut objects, &fov_map);
                 }
             }
         }
