@@ -2,11 +2,228 @@ from collections import Counter
 
 
 def read_file(filename):
-    contents = ''
+    contents = ""
     with open(filename) as readfile:
         contents = readfile.read()
     return contents
 
+
+# --- day ten ---
+
+
+def day_ten_prep(data):
+    return [line for line in data.split("\n") if line]
+
+
+def day_ten_a(data):
+    # legal: ([]), {()()()}, <([{}])>
+    # corrupt: (], {()()()>, (((()))}, and <([]){()}[{}])
+    lines = day_ten_prep(data)
+
+    opens = list("([{<")
+    closes = list(")]}>")
+    points = (3, 57, 1197, 25137)
+    points = {ch: points[i] for i, ch in enumerate(closes)}
+    close_to_open = {closes[i]: opens[i] for i in range(len(opens))}
+    open_to_close = {opens[i]: closes[i] for i in range(len(opens))}
+
+    corrupts = []
+    for line in lines:
+        corrupt = False
+        stack = []
+
+        for ch in line:
+            if ch in opens:
+                stack.append(ch)
+            else:
+                if len(stack) == 0:
+                    corrupt = True
+                    break
+                prev = stack.pop()
+                expected = open_to_close[prev]
+                if expected != ch:
+                    corrupt = True
+                    corrupts.append(ch)
+                    break
+
+    score = 0
+    counts = Counter(corrupts)
+    for k, v in counts.items():
+        score += points[k] * v
+
+    return score
+
+
+def day_ten_b(data):
+    lines = day_ten_prep(data)
+    opens = list("([{<")
+    closes = list(")]}>")
+    close_to_open = {closes[i]: opens[i] for i in range(len(opens))}
+    open_to_close = {opens[i]: closes[i] for i in range(len(opens))}
+
+    incompletes = []
+    corrupts = []
+    for line in lines:
+        corrupt = False
+        stack = []
+
+        for ch in line:
+            if ch in opens:
+                stack.append(ch)
+            else:
+                if len(stack) == 0:
+                    corrupt = True
+                    break
+                prev = stack.pop()
+                expected = open_to_close[prev]
+                if expected != ch:
+                    corrupt = True
+                    corrupts.append(ch)
+                    break
+        if not corrupt:
+            incompletes.append(line)
+
+    autocomplete_score = {")": 1, "]": 2, "}": 3, ">": 4}
+    completions = []
+    scores = []
+
+    for line in incompletes:
+        index = 0
+        score = 0
+        stack = []
+
+        while index < len(line):
+            if line[index] in closes:
+                stack.pop()
+            else:
+                stack.append(line[index])
+
+            index += 1
+
+        matches = [open_to_close[ch] for ch in stack]
+        stack = reversed(matches)
+
+        for ch in stack:
+            score = score * 5 + autocomplete_score[ch]
+        scores.append(score)
+
+    scores.sort()
+    return scores[len(scores) // 2]
+
+
+# print(day_ten_a(example))
+# print(day_ten_a(read_file('day10.txt')))
+# print(day_ten_b(read_file('day10.txt')))
+
+
+# --- day nine ---
+
+
+def day_nine_prep(data):
+    grid = []
+    for row in data.split("\n"):
+        if not row:
+            continue
+        grid.append([int(v) for v in row])
+    return grid
+
+
+def grid_adjacents(grid, x, y):
+    up = None
+    down = None
+    left = None
+    right = None
+
+    if y > 0:
+        up = grid[y - 1][x]
+
+    if y < len(grid) - 1:
+        down = grid[y + 1][x]
+
+    if x > 0:
+        left = grid[y][x - 1]
+
+    if x < len(grid[0]) - 1:
+        right = grid[y][x + 1]
+
+    return [v for v in [up, down, left, right] if v is not None]
+
+
+def grid_adjacents_points(grid, x, y):
+    up = None
+    down = None
+    left = None
+    right = None
+
+    if y > 0:
+        up = (x, y - 1, grid[y - 1][x])
+
+    if y < len(grid) - 1:
+        down = (x, y + 1, grid[y + 1][x])
+
+    if x > 0:
+        left = (x - 1, y, grid[y][x - 1])
+
+    if x < len(grid[0]) - 1:
+        right = (x + 1, y, grid[y][x + 1])
+
+    return [v for v in [up, down, left, right] if v is not None]
+
+
+def grid_basin(grid, x, y):
+    basin_points = set()
+
+    def walk(grid, x, y, basin_points):
+        for x, y, value in grid_adjacents_points(grid, x, y):
+            if (x, y) not in basin_points and value != 9:
+                basin_points.add((x, y))
+                walk(grid, x, y, basin_points)
+
+    walk(grid, x, y, basin_points)
+    return basin_points
+
+
+def day_nine_a(data):
+    grid = day_nine_prep(data)
+    print(grid)
+
+    low_points = []
+
+    for y, row in enumerate(grid):
+        for x, value in enumerate(row):
+            is_low_point = True
+            for neighbor in grid_adjacents(grid, x, y):
+                if neighbor <= value:
+                    is_low_point = False
+
+            if is_low_point:
+                low_points.append((x, y, value + 1))
+
+    return sum(p[2] for p in low_points)
+
+
+def day_nine_b(data):
+    grid = day_nine_prep(data)
+    seen_basin_points = set()
+    basins = []
+
+    for y, row in enumerate(grid):
+        for x, value in enumerate(row):
+            if value != 9 and (x, y) not in seen_basin_points:
+                basin_points = grid_basin(grid, x, y)
+                for point in basin_points:
+                    seen_basin_points.add(point)
+
+                basins.append(len(basin_points))
+
+    basins = sorted(basins, reverse=True)
+
+    return basins[0] * basins[1] * basins[2]
+
+
+# day_nine_input = read_file('day09.txt')
+# print(day_nine_a(day_nine_input))
+# print(day_nine_b(day_nine_input))
 
 
 # --- day eight ---
@@ -55,8 +272,6 @@ IDEAL_WIRING = {
     8: "abcdefg",
     9: "abcdfg",
 }
-
-
 
 
 SEGMENT_LENGTHS = {
