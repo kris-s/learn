@@ -8,6 +8,93 @@ def read_file(filename):
     return contents
 
 
+# --- day eleven ---
+
+
+def day_eleven_prep(data):
+    grid = []
+    for row in data.split('\n'):
+        if not row:
+            continue
+
+        grid.append([int(v) for v in row])
+    return grid
+
+def grid_adjacents_diagonal(grid, x, y):
+    points = [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (1, 0),
+        (1, 1),
+        (0, 1),
+        (-1, 1),
+        (-1, 0),
+    ]
+
+    neighbors = []
+    for dx, dy in points:
+        nx = x + dx
+        ny = y + dy
+        if nx > -1 and nx < len(grid[0]) and ny > -1 and ny < len(grid):
+            neighbors.append((nx, ny))
+
+    return neighbors
+
+def grid_print(grid):
+    for row in grid:
+        print(''.join(str(v) for v in row))
+
+def day_eleven_a(data, step_count=100):
+    grid = day_eleven_prep(data)
+
+    flashes = 0
+    grid_print(grid)
+    print()
+    for step in range(step_count):
+        # print('step', step)
+
+
+        # First, the energy level of each octopus increases by 1.
+        for y, row in enumerate(grid):
+            for x, octopus in enumerate(row):
+                grid[y][x] = octopus + 1
+
+        # Then, any octopus with an energy level greater than 9 flashes.
+        # This increases the energy level of all adjacent octopuses by 1,
+        # including octopuses that are diagonally adjacent. If this causes
+        # an octopus to have an energy level greater than 9, it also flashes.
+        # This process continues as long as new octopuses keep having their
+        # energy level increased beyond 9. (An octopus can only flash at
+        # most once per step.)
+        flashers = set()
+
+        refresh = 1
+        while refresh > 0:
+            for y, row in enumerate(grid):
+                for x, octopus in enumerate(row):
+                    if octopus > 9 and (x, y) not in flashers:
+                        flashers.add((x, y))
+                        for nx, ny in grid_adjacents_diagonal(grid, x, y):
+                            grid[ny][nx] += 1
+                        refresh += 1
+            refresh -= 1
+
+        flashes += len(flashers)
+
+        if len(flashers) == 100:
+            print('sync flashes at step', step + 1)
+            return
+
+        for x, y in flashers:
+            grid[y][x] = 0
+
+    return flashes
+
+# print(day_eleven_a(example))
+# print(day_eleven_a(day_eleven_input, step_count=10000))
+
+
 # --- day ten ---
 
 
