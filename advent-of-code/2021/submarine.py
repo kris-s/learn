@@ -1,18 +1,20 @@
+from array import array
 from collections import Counter
+from queue import PriorityQueue
 
 from archive import read_file
 
 
 print("Saving Christmas again!")
 
-example = """5483143223
-2745854711
-5264556173
-6141336146
-6357385478
-4167524645
-2176841721
-6882881134
-4846848554
-5283751526
-"""
+example = """1163751742
+1381373672
+2136511328
+3694931569
+7463417111
+1319128137
+1359912421
+3125421639
+1293138521
+2311944581"""
+

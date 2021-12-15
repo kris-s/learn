@@ -8,17 +8,383 @@ def read_file(filename):
     return contents
 
 
+# --- day fifteen ---
+
+
+def day_fifteen_prep(data):
+    grid = []
+    for row in data.split("\n"):
+        if not row:
+            continue
+        grid.append([int(v) for v in row])
+
+    return grid
+
+
+def day_fifteen_a(data, override=None):
+    grid = day_fifteen_prep(data)
+
+    if override is not None:
+        grid = override[:]
+
+    start = (0, 0)
+    goal = (len(grid[0]) - 1, len(grid) - 1)
+    print("goal is:", goal)
+
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from = {}
+    cost_so_far = {}
+    came_from[start] = None
+    cost_so_far[start] = 0
+
+    while not frontier.empty():
+        current = frontier.get()
+
+        if current == goal:
+            print("reached the goal")
+            break
+
+        for next in grid_adjacents_points(grid, current[0], current[1]):
+            new_cost = cost_so_far[current] + grid[next[1]][next[0]]
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost
+                frontier.put(next, priority)
+                came_from[next] = current
+
+    print(current)
+    print(cost_so_far[current])
+    print(goal in cost_so_far)
+    # for k in
+    return 0
+
+
+def day_fifteen_incr(value, y, x):
+    modifier = (y % 5) + (x % 5)
+
+    value += modifier
+    if value > 9:
+        value = value % 9
+
+    return value
+
+
+def day_fifteen_b(data):
+    grid = day_fifteen_prep(data)
+    x_original = len(grid[0])
+    y_original = len(grid)
+    x_size = len(grid[0]) * 5
+    y_size = len(grid) * 5
+    new_grid = [[0] * x_size for _ in range(y_size)]
+
+    for y in range(y_size):
+        for x in range(x_size):
+            val = grid[y % y_original][x % x_original]
+            new_grid[y][x] = day_fifteen_incr(val, y // y_original, x // x_original)
+
+    for row in new_grid:
+        print("".join(str(v) for v in row))
+
+    day_fifteen_a(data, override=new_grid)
+
+
+# --- day fourteen ---
+
+
+def day_fourteen_prep(data):
+    lines = data.split("\n")
+    start = lines.pop(0)
+
+    rules = {}
+    for line in lines:
+        if not line:
+            continue
+
+        left, right = line.split(" -> ")
+
+        rules[left] = right
+
+    return start, rules
+
+
+def day_fourteen_a(data):
+    sequence, rules = day_fourteen_prep(data)
+
+    sequence = list(sequence)
+    for step in range(10):
+        print("step:", step)
+        insertions = []
+        for i in range(len(sequence)):
+            if i == 0:
+                continue
+
+            pair = f"{sequence[i-1]}{sequence[i]}"
+
+            if pair in rules:
+                insertions.append((i, rules[pair]))
+
+        for count, (i, value) in enumerate(insertions):
+            sequence.insert(i + count, value)
+
+        # print('step:', step, 'sequence:', ''.join(sequence))
+
+    counts = Counter(sequence)
+
+    return max(counts.values()) - min(counts.values())
+
+
+def day_fourteen_b(data):
+    sequence_str, rules = day_fourteen_prep(data)
+
+    rules = {(k[0], k[1]): v for k, v in rules.items()}
+    last_char = sequence_str[-1]
+
+    sequence = Counter(zip(sequence_str, sequence_str[1:]))
+
+    for step in range(40):
+        print("step:", step)
+
+        new_sequence = Counter()
+        for pair in sequence:
+            result = rules[pair]
+            left, right = pair
+            new_sequence[(left, result)] += sequence[pair]
+            new_sequence[(result, right)] += sequence[pair]
+
+        sequence = new_sequence
+
+    counts = Counter(last_char)
+    for pair, count in sequence.items():
+        left, right = pair
+        counts[left] += count
+        counts[right] += count
+
+    return (max(counts.values()) - min(counts.values())) // 2
+
+
+# print(day_fourteen_a(example))
+# print(day_fourteen_b(example))
+# print(day_fourteen_b(read_file('day14.txt')))
+
+
+# --- day thirteen ---
+
+
+def day_thirteen_prep(data):
+    points = []
+    folds = []
+
+    for line in data.split("\n"):
+        if "," in line:
+            x, y = line.split(",")
+
+        points.append((int(x), int(y)))
+
+        if "fold" in line:
+            folds.append(line)
+
+    return points, folds
+
+
+def fold_grid(grid, fold):
+    axis, value = fold.split("=")
+    value = int(value)
+
+    y_axis = "y" in axis
+
+    if y_axis:
+        for i in range(1, value + 1):
+            try:
+                for x, marker in enumerate(grid[value + i]):
+                    if marker == "#":
+                        grid[value - i][x] = marker
+            except IndexError:
+                pass
+        return grid[:value]
+    else:
+        for y, row in enumerate(grid):
+            for i in range(1, value + 1):
+                try:
+                    marker = grid[y][value + i]
+                    if marker == "#":
+                        grid[y][value - i] = marker
+                except IndexError:
+                    pass
+
+        for i, row in enumerate(grid):
+            grid[i] = row[:value]
+
+        return grid
+
+
+def day_thirteen_a(data):
+    points, folds = day_thirteen_prep(data)
+    print(points, folds)
+
+    max_x = max(x for x, _ in points)
+    max_y = max(y for _, y in points)
+
+    print(max_x, max_y)
+    grid = []
+    for y in range(max_y + 1):
+        row = []
+        for x in range(max_x + 1):
+            row.append(".")
+        grid.append(row)
+
+    for (x, y) in points:
+        grid[y][x] = "#"
+
+    for row in grid:
+        print("".join(row))
+
+    for fold in folds:
+        print("folding!", fold)
+        grid = fold_grid(grid, fold)
+        for row in grid:
+            print("".join(row))
+
+    visible = 0
+
+    for row in grid:
+        visible += row.count("#")
+
+    return visible
+
+
+# print(day_thirteen_a(example))
+# print(day_thirteen_a(read_file('day13.txt')))
+
+
+# --- day twelve ---
+
+
+def day_twelve_prep(data):
+    caves = {}
+
+    for line in data.split("\n"):
+        if not line:
+            continue
+
+        left_name, right_name = line.split("-")
+
+        if left_name in caves:
+            caves[left_name].add(right_name)
+        else:
+            caves[left_name] = {right_name}
+
+        if right_name in caves:
+            caves[right_name].add(left_name)
+        else:
+            caves[right_name] = {left_name}
+
+    return caves
+
+
+def day_twelve_a(data):
+    caves = day_twelve_prep(data)
+    for k in caves:
+        print(k, ":", ",".join(sorted(caves[k])))
+
+    paths = set()
+
+    guesses = 0
+
+    def walk(path):
+        branches = []
+        current = path[-1]
+
+        for c in caves[current]:
+            if c not in path:
+                branch = path[:]
+                branch.append(c)
+                branches.append(branch)
+            elif c in path and c.isupper():
+                branch = path[:]
+                branch.append(c)
+                branches.append(branch)
+
+        for branch in branches:
+            if branch[-1] == "end":
+                paths.add(",".join(branch))
+            else:
+                walk(branch)
+
+    walk(["start"])
+    print(paths)
+    return len(paths)
+
+
+def lower_count(path):
+    caves = [c for c in path if c.islower()]
+    caves = [c for c in caves if c not in ("start", "end")]
+    if caves:
+        return max(Counter(caves).values())
+    return 0
+
+
+def day_twelve_b(data):
+    caves = day_twelve_prep(data)
+    for k in caves:
+        print(k, ":", ",".join(sorted(caves[k])))
+
+    paths = set()
+
+    guesses = 0
+
+    def walk(path):
+        branches = []
+        current = path[-1]
+
+        for c in caves[current]:
+            if c not in path:
+                branch = path[:]
+                branch.append(c)
+                branches.append(branch)
+            elif (
+                c in path
+                and c.islower()
+                and lower_count(path) < 2
+                and c not in ("start", "end")
+            ):
+                branch = path[:]
+                branch.append(c)
+                branches.append(branch)
+            elif c in path and c.isupper():
+                branch = path[:]
+                branch.append(c)
+                branches.append(branch)
+
+        for branch in branches:
+            if branch[-1] == "end":
+                paths.add(",".join(branch))
+            else:
+                walk(branch)
+
+    walk(["start"])
+    print(paths)
+    return len(paths)
+
+
+# print(day_twelve_a(example))
+# print(day_twelve_a(read_file('day12.txt')))
+# print(day_twelve_b(example))
+# print(day_twelve_b(read_file('day12.txt')))
+
+
 # --- day eleven ---
 
 
 def day_eleven_prep(data):
     grid = []
-    for row in data.split('\n'):
+    for row in data.split("\n"):
         if not row:
             continue
 
         grid.append([int(v) for v in row])
     return grid
+
 
 def grid_adjacents_diagonal(grid, x, y):
     points = [
@@ -41,9 +407,11 @@ def grid_adjacents_diagonal(grid, x, y):
 
     return neighbors
 
+
 def grid_print(grid):
     for row in grid:
-        print(''.join(str(v) for v in row))
+        print("".join(str(v) for v in row))
+
 
 def day_eleven_a(data, step_count=100):
     grid = day_eleven_prep(data)
@@ -53,7 +421,6 @@ def day_eleven_a(data, step_count=100):
     print()
     for step in range(step_count):
         # print('step', step)
-
 
         # First, the energy level of each octopus increases by 1.
         for y, row in enumerate(grid):
@@ -83,13 +450,14 @@ def day_eleven_a(data, step_count=100):
         flashes += len(flashers)
 
         if len(flashers) == 100:
-            print('sync flashes at step', step + 1)
+            print("sync flashes at step", step + 1)
             return
 
         for x, y in flashers:
             grid[y][x] = 0
 
     return flashes
+
 
 # print(day_eleven_a(example))
 # print(day_eleven_a(day_eleven_input, step_count=10000))
