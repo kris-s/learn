@@ -8,6 +8,88 @@ def read_file(filename):
     return contents
 
 
+
+
+def day_seventeen_prep(data):
+    target_points = []
+
+    x_values = data.split('x=')[1]
+    x_values = x_values.split(',')[0]
+    x_values = x_values.split('..')
+    x_values = [int(x) for x in x_values]
+    print('x_values', x_values)
+
+    y_values = data.split('y=')[1]
+    y_values = y_values.split(',')[0]
+    y_values = y_values.split('..')
+    y_values = [int(y) for y in y_values]
+    print('y_values', y_values)
+
+    for x in range(x_values[0], x_values[1] + 1, 1):
+        for y in range(y_values[0], y_values[1] + 1, 1):
+            target_points.append((x, y))
+
+    return target_points
+
+def launch_probe(vx, vy):
+    pos_x = 0
+    pos_y = 0
+
+    points = [(pos_x, pos_y)]
+
+    for _ in range(300):
+        pos_x += vx
+        pos_y += vy
+
+        if pos_y < -106:
+            break
+
+        points.append((pos_x, pos_y))
+
+        if vx > 0:
+            vx -= 1
+        elif vx < 0:
+            vx += 1
+
+        vy -= 1
+
+    return points
+
+
+def day_seventeen_a(data):
+    target_area = day_seventeen_prep(data)
+
+    max_height = 0
+    max_config = None
+
+    hitters = set()
+
+    for x in range(250):
+        for y in range(-150, 150, 1):
+            points = launch_probe(x, y)
+
+            did_hit = False
+
+            for point in points:
+                if point in target_area:
+                    hitters.add((x, y))
+                    did_hit = True
+
+            probe_height = max([py for _, py in points])
+
+            if did_hit and probe_height > max_height:
+                max_config = (x, y)
+                max_height = probe_height
+
+    print('max_config', max_config, 'max_height', max_height, 'hitters', len(hitters))
+    return max_config
+
+
+# max_config (17, 105) max_height 5565
+# print(day_seventeen_a(example))
+# print(day_seventeen_a(read_file('day17.txt')))
+
+
 # --- day fifteen ---
 
 
