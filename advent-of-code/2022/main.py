@@ -31,5 +31,35 @@ SAMPLE = load('sample.txt')
 INPUT = load('input.txt')
 
 
-day_2_b(SAMPLE)
-day_2_b(INPUT)
+def day_3(text):
+    def item_value(item):
+        if ord(item) - 96 > 0:
+            return ord(item) - 96
+        else:
+            return ord(item) - 38
+
+    items_of_interest = []
+    for line in text.splitlines():
+        split_at = int(len(line) / 2)
+        left = line[:split_at]
+        right = line[split_at:]
+
+        common = list(set(left) & set(right))
+        items_of_interest.append(common[0])
+
+    print(sum(item_value(item) for item in items_of_interest))
+
+    group_ids = []
+    lines = text.splitlines()
+    for i in range(0, len(lines), 3):
+        one = set(lines[i])
+        two = set(lines[i+1])
+        thr = set(lines[i+2])
+        common = list(set(one) & set(two) & set(thr))
+        group_ids.append(common[0])
+
+    print(sum(item_value(item) for item in group_ids))
+
+
+day_3(SAMPLE)
+day_3(INPUT)
