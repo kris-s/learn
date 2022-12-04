@@ -31,35 +31,28 @@ SAMPLE = load('sample.txt')
 INPUT = load('input.txt')
 
 
-def day_3(text):
-    def item_value(item):
-        if ord(item) - 96 > 0:
-            return ord(item) - 96
-        else:
-            return ord(item) - 38
+def day_4(text):
+    full = 0
+    partial = 0
 
-    items_of_interest = []
     for line in text.splitlines():
-        split_at = int(len(line) / 2)
-        left = line[:split_at]
-        right = line[split_at:]
+        a, b = line.split(',')
 
-        common = list(set(left) & set(right))
-        items_of_interest.append(common[0])
+        a_lower, a_upper = a.split('-')
+        a_set = set(range(int(a_lower), int(a_upper)+1))
 
-    print(sum(item_value(item) for item in items_of_interest))
+        b_lower, b_upper = b.split('-')
+        b_set = set(range(int(b_lower), int(b_upper)+1))
 
-    group_ids = []
-    lines = text.splitlines()
-    for i in range(0, len(lines), 3):
-        one = set(lines[i])
-        two = set(lines[i+1])
-        thr = set(lines[i+2])
-        common = list(set(one) & set(two) & set(thr))
-        group_ids.append(common[0])
+        if a_set.issubset(b_set) or b_set.issubset(a_set):
+            full += 1
 
-    print(sum(item_value(item) for item in group_ids))
+        if a_set & b_set:
+            partial += 1
+
+    print(full)
+    print(partial)
 
 
-day_3(SAMPLE)
-day_3(INPUT)
+day_4(SAMPLE)
+day_4(INPUT)

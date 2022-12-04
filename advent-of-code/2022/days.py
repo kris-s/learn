@@ -124,3 +124,26 @@ def day_3(text):
         group_ids.append(common[0])
 
     print(sum(item_value(item) for item in group_ids))
+
+
+def day_4(text):
+    full = 0
+    partial = 0
+
+    for line in text.splitlines():
+        a, b = line.split(',')
+
+        a_lower, a_upper = a.split('-')
+        a_set = set(range(int(a_lower), int(a_upper)+1))
+
+        b_lower, b_upper = b.split('-')
+        b_set = set(range(int(b_lower), int(b_upper)+1))
+
+        if a_set.issubset(b_set) or b_set.issubset(a_set):
+            full += 1
+
+        if a_set & b_set:
+            partial += 1
+
+    print(full)
+    print(partial)
