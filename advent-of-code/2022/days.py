@@ -1,3 +1,5 @@
+import re
+
 
 def day_1(text):
     elves = []
@@ -147,3 +149,93 @@ def day_4(text):
 
     print(full)
     print(partial)
+
+
+def day_5_a(text):
+    def execute_instructions(cargo, instructions):
+        for inst in instructions:
+            moves, source, dest = map(int, re.findall(r'move (\d+) from (\d+) to (\d+)', inst)[0])
+            for i in range(moves):
+                crate = cargo[source-1].pop(0)
+                cargo[dest-1].insert(0, crate)
+
+    cargo = {}
+
+    raw_crates = []
+    instructions = []
+    n_stacks = 0
+
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+
+
+        if not line:
+            n_stacks = max(map(int, lines[i-1].split()))
+            raw_crates = lines[:i-1]
+            instructions = lines[i+1:]
+
+    cursor = 1
+    for col in range(n_stacks):
+        cargo[col] = []
+        for line in raw_crates:
+            if len(line) > cursor and line[cursor] != ' ':
+                cargo[col].append(line[cursor])
+        cursor += 4
+
+    print('cargo:', cargo)
+    print(instructions)
+    execute_instructions(cargo, instructions)
+
+    topline = []
+    for k, v in cargo.items():
+        print(k, v[0])
+        topline.append(v[0])
+
+    print(''.join(topline))
+
+
+def day_5_b(text):
+    def execute_instructions(cargo, instructions):
+        for inst in instructions:
+            moves, source, dest = map(int, re.findall(r'move (\d+) from (\d+) to (\d+)', inst)[0])
+
+            crates = []
+            for i in range(moves):
+                crates.append(cargo[source-1].pop(0))
+
+            for crate in reversed(crates):
+                cargo[dest-1].insert(0, crate)
+
+    cargo = {}
+
+    raw_crates = []
+    instructions = []
+    n_stacks = 0
+
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+
+
+        if not line:
+            n_stacks = max(map(int, lines[i-1].split()))
+            raw_crates = lines[:i-1]
+            instructions = lines[i+1:]
+
+    cursor = 1
+    for col in range(n_stacks):
+        cargo[col] = []
+        for line in raw_crates:
+            if len(line) > cursor and line[cursor] != ' ':
+                cargo[col].append(line[cursor])
+        cursor += 4
+
+    print('cargo:', cargo)
+    print(instructions)
+    execute_instructions(cargo, instructions)
+
+    topline = []
+    for k, v in cargo.items():
+        print(k, v[0])
+        topline.append(v[0])
+
+    print(''.join(topline))
