@@ -239,3 +239,15 @@ def day_5_b(text):
         topline.append(v[0])
 
     print(''.join(topline))
+
+
+def day_6(text):
+    window = []
+    for i, char in enumerate(text.strip()):
+        window.insert(0, char)
+        if len(window) > 14:
+            window.pop()
+
+        if len(set(window)) == 14:
+            print(i+1)
+            break
