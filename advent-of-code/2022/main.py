@@ -32,17 +32,72 @@ SAMPLE = load('sample.txt')
 INPUT = load('input.txt')
 
 
-def day_6(text):
-    window = []
-    for i, char in enumerate(text.strip()):
-        window.insert(0, char)
-        if len(window) > 14:
-            window.pop()
+def day_7(text):
+    lines = text.splitlines()
 
-        if len(set(window)) == 14:
-            print(i+1)
-            break
+    cwd = ['/']
+    directories = {}
+
+    for line in lines:
+        if line[0] == '$':
+            command = line.split()[1]
+            if command == 'cd':
+                destination = line.split()[2]
+                if destination == '..' and len(cwd) > 1:
+                    cwd.pop()
+                elif cwd != [destination]:
+                    cwd.append(destination)
+            elif command == 'ls':
+                pass
+        else:
+            dirname = '/'.join(cwd)
+            entry = line
+            if line.startswith('dir'):
+                entry = dirname + '/' + line.split()[1]
+            if dirname not in directories:
+                directories[dirname] = {entry}
+            else:
+                directories[dirname].add(entry)
+
+    def walk(contents):
+        total = 0
+        for entry in contents:
+            if entry.startswith('/'):
+                total += walk(directories[entry])
+            else:
+                total += int(entry.split()[0])
+        return total
+
+    dir_sizes = {}
+
+    for directory, contents in directories.items():
+        dir_sizes[directory] = walk(contents)
+
+    for k, v in dir_sizes.items():
+        print(k, v)
+
+    limit = 100000
+    total = 0
+
+    for key, value in dir_sizes.items():
+        if value <= limit:
+            total += value
+
+    print('part 1', total)
+
+    total_space = 70000000
+    target = 30000000
+    total_unused = total_space - dir_sizes['/']
+    print('total_unused', total_unused)
+
+    could_work = []
+
+    for key, value in dir_sizes.items():
+        if value + total_unused >= target:
+            could_work.append(value)
+
+    print('part 2', min(could_work))
 
 
-day_6(SAMPLE)
-day_6(INPUT)
+day_7(SAMPLE)
+day_7(INPUT)
