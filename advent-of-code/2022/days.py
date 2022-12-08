@@ -251,3 +251,155 @@ def day_6(text):
         if len(set(window)) == 14:
             print(i+1)
             break
+
+
+def day_7(text):
+    lines = text.splitlines()
+
+    cwd = ['/']
+    directories = {}
+
+    for line in lines:
+        if line[0] == '$':
+            command = line.split()[1]
+            if command == 'cd':
+                destination = line.split()[2]
+                if destination == '..' and len(cwd) > 1:
+                    cwd.pop()
+                elif cwd != [destination]:
+                    cwd.append(destination)
+            elif command == 'ls':
+                pass
+        else:
+            dirname = '/'.join(cwd)
+            entry = line
+            if line.startswith('dir'):
+                entry = dirname + '/' + line.split()[1]
+            if dirname not in directories:
+                directories[dirname] = {entry}
+            else:
+                directories[dirname].add(entry)
+
+    def walk(contents):
+        total = 0
+        for entry in contents:
+            if entry.startswith('/'):
+                total += walk(directories[entry])
+            else:
+                total += int(entry.split()[0])
+        return total
+
+    dir_sizes = {}
+
+    for directory, contents in directories.items():
+        dir_sizes[directory] = walk(contents)
+
+    for k, v in dir_sizes.items():
+        print(k, v)
+
+    limit = 100000
+    total = 0
+
+    for key, value in dir_sizes.items():
+        if value <= limit:
+            total += value
+
+    print('part 1', total)
+
+    total_space = 70000000
+    target = 30000000
+    total_unused = total_space - dir_sizes['/']
+    print('total_unused', total_unused)
+
+    could_work = []
+
+    for key, value in dir_sizes.items():
+        if value + total_unused >= target:
+            could_work.append(value)
+
+    print('part 2', min(could_work))
+
+
+def day_8(text):
+    lines = text.splitlines()
+    grid = []
+
+    for line in lines:
+        grid.append([int(h) for h in line])
+
+    width = len(grid[0]) - 1
+    height = len(grid) - 1
+
+    def is_visible(x, y):
+        if x == 0 or y == 0:
+            return True
+        if x == width or y == height:
+            return True
+
+        tree_height = grid[y][x]
+
+        # left
+        left = grid[y][:x]
+        if tree_height > max(left):
+            return True
+
+        # right
+        if tree_height > max(grid[y][x+1:]):
+            return True
+
+        above = [grid[i][x] for i in range(y)]
+        if tree_height > max(above):
+            return True
+
+        below = [grid[i+y+1][x] for i in range(height-y)]
+        if tree_height > max(below):
+            return True
+
+        return False
+
+    visible_trees = set()
+
+    for y, row in enumerate(grid):
+        for x, tree in enumerate(row):
+            if is_visible(x, y):
+                visible_trees.add((x, y))
+
+    print('part 1:', len(visible_trees))
+
+    def scenic_score(x, y):
+        tree_height = grid[y][x]
+
+        left = list(reversed(grid[y][:x]))
+        right = grid[y][x+1:]
+        above = list(reversed([grid[i][x] for i in range(y)]))
+        below = [grid[i+y+1][x] for i in range(height-y)]
+
+        views = [left, right, above, below]
+
+        for view in views:
+            if not view:
+                return 0
+
+        visible_trees = [1, 1, 1, 1]
+
+        for i, view in enumerate(views):
+            current_tree = view[0]
+            if current_tree >= tree_height:
+                continue
+            for tree in view[1:]:
+                if current_tree >= tree_height:
+                    break
+                else:
+                    visible_trees[i] += 1
+                    current_tree = tree
+        a, b, c, d = visible_trees
+
+        return a * b * c * d
+
+    scores = []
+    for y, row in enumerate(grid):
+        for x, tree in enumerate(row):
+            score = scenic_score(x, y)
+            scores.append(score)
+
+    print('part 2:', max(scores))
