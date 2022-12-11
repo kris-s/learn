@@ -403,3 +403,218 @@ def day_8(text):
             scores.append(score)
 
     print('part 2:', max(scores))
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def as_tuple(self):
+        return (self.x, self.y)
+
+    def follow(self, target):
+        tx = target.x
+        ty = target.y
+
+        dx = abs(self.x - tx)
+        dy = abs(self.y - ty)
+
+        # print('in follow:', dx, dy, self, target)
+
+        if dx <= 1 and dy <= 1:
+            return
+
+        if tx != self.x:
+            if tx > self.x:
+                self.x += 1
+            else:
+                self.x -= 1
+
+        if ty != self.y:
+            if ty > self.y:
+                self.y += 1
+            else:
+                self.y -= 1
+
+    def __repr__(self):
+        return f'({self.x}, {self.y})'
+
+moves = {
+    'U': (0, 1),
+    'D': (0, -1),
+    'L': (-1, 0),
+    'R': (1, 0),
+}
+
+def day_9(text):
+    lines = text.splitlines()
+
+    head_pos = Point(0, 0)
+    tail_pos = Point(0, 0)
+
+    tail_positions = {(0, 0)}
+
+    for line in lines:
+        direction, amount = line.split()
+        amount = int(amount)
+
+        dx, dy = moves[direction]
+
+        for _ in range(amount):
+            head_pos.x += dx
+            head_pos.y += dy
+
+            tail_pos.follow(head_pos)
+            tail_positions.add(tail_pos.as_tuple())
+
+            print('head:', head_pos, 'tail:', tail_pos)
+
+    print(tail_positions)
+    print('part 1:', len(tail_positions))
+
+
+    snake = [Point(0, 0) for _ in range(10)]
+
+    tail_positions = {(0, 0)}
+
+    for line in lines:
+        direction, amount = line.split()
+        amount = int(amount)
+
+        dx, dy = moves[direction]
+
+        for _ in range(amount):
+            snake[0].x += dx
+            snake[0].y += dy
+
+            for i, segment in enumerate(snake):
+                if i == 0:
+                    continue
+
+                segment.follow(snake[i-1])
+
+                if i == 9:
+                    print('updating tail pos:', segment)
+                    tail_positions.add(segment.as_tuple())
+        print(snake)
+
+    print('part 2:', len(tail_positions))
+
+
+def day_10_a(text):
+    lines = text.splitlines()
+
+    x = 1
+    cursor = 0
+    tick = 1
+
+    working = False
+    amount_to_add = 0
+    signal_strengths = []
+    current_inst = ''
+    values_added = []
+
+    target_cycle = [20, 60, 100, 140, 180, 220]
+
+    while True:
+        if working:
+            working = False
+            tick += 1
+            continue
+        elif amount_to_add is not None:
+            values_added.append(amount_to_add)
+            x += amount_to_add
+            amount_to_add = None
+
+        if tick in target_cycle:
+            target_cycle.remove(tick)
+            signal_strengths.append(tick * x)
+
+        if cursor == len(lines):
+            break
+
+        line = lines[cursor]
+        cursor += 1
+
+        if line == 'noop':
+            working = False
+            tick += 1
+        else:
+            amount_to_add = int(line.split()[1])
+            working = True
+            tick += 1
+        if tick in target_cycle:
+            target_cycle.remove(tick)
+            signal_strengths.append(tick * x)
+
+    print(signal_strengths)
+    print('part 1', sum(signal_strengths))
+
+
+def day_10_b(text):
+    lines = text.splitlines()
+
+    x = 1
+    cursor = 0
+    tick = 1
+
+    working = False
+    amount_to_add = 0
+    signal_strengths = []
+    current_inst = ''
+    values_added = []
+    grid = list('.' * 240)
+    grid[80] = '%'
+    grid[239] = '?'
+    grid_two = []
+
+    target_cycle = [20, 60, 100, 140, 180, 220]
+
+    # If the sprite is positioned such that one of its three pixels
+    # is the pixel currently being drawn, the screen produces a lit pixel (#);
+    # otherwise, the screen leaves the pixel dark (.).
+    def draw(x, tick, grid):
+        sprite = [x-1, x, x+1]
+
+        draw_tick = (tick - 1) % 40
+        print('draw_tick:', draw_tick)
+
+        if draw_tick in sprite:
+            print('drawing pixel at', tick-1)
+            grid[tick-1]='#'
+
+    get_next_instruction = True
+
+    while cursor < len(lines):
+        if get_next_instruction:
+            line = lines[cursor]
+            print('starting executing', line)
+            cursor += 1
+            if line.startswith('addx'):
+                get_next_instruction = False
+                prepare_to_add = int(line.split()[1])
+        else:
+            get_next_instruction = True
+            amount_to_add = prepare_to_add
+            prepare_to_add = 0
+
+        draw(x, tick, grid)
+        if amount_to_add is not None:
+            x += amount_to_add
+            amount_to_add = None
+        print('x reg:', x)
+        tick += 1
+
+    print(signal_strengths)
+    print('part 1', sum(signal_strengths))
+
+    for i in range(6):
+        lower = i * 40
+        upper = lower + 40
+        print(''.join(grid[lower:upper]))
+
+    for i in range(6):
+        lower = i * 40
+        upper = lower + 40
+        print(''.join(grid_two[lower:upper]))
