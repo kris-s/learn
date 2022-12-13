@@ -618,3 +618,210 @@ def day_10_b(text):
         lower = i * 40
         upper = lower + 40
         print(''.join(grid_two[lower:upper]))
+
+
+class Monkey:
+    def __init__(self, n, lines):
+        clean = lambda x: x.split(':')[1].strip()
+        clean_target = lambda x: int(x.split('throw to monkey')[1])
+
+        self.n = n
+        self.items = [int(i) for i in clean(lines[1]).split(',')]
+        self.operation = clean(lines[2])
+        test = clean(lines[3])
+        self.test_divisor = int(test.split(' by ')[1])
+        self.test_true_target = clean_target(lines[4])
+        self.test_false_target = clean_target(lines[5])
+        self.inspection_count = 0
+
+    def __repr__(self):
+        return f'{self.n}\n{self.items}\n{self.operation}\n{test_divisor}\n{self.test_true}\n{self.test_false}'
+
+    def run(self, monkeys):
+        while self.items:
+            item = self.items.pop(0)
+            self.inspection_count += 1
+
+            _, _, l, op, r = self.operation.split()
+            if op == '+':
+                opfunc = lambda x, a: x + a
+            else:
+                opfunc = lambda x, a: x * a
+
+            if r == 'old':
+                item = opfunc(item, item)
+            else:
+                item = opfunc(item, int(r))
+
+            item = item // 3
+
+            if item % self.test_divisor == 0:
+                monkeys[self.test_true_target].items.append(item)
+            else:
+                monkeys[self.test_false_target].items.append(item)
+
+    def run3(self, monkeys, lcm):
+        while self.items:
+            item = self.items.pop(0)
+            self.inspection_count += 1
+
+            _, _, l, op, r = self.operation.split()
+            if op == '+':
+                opfunc = lambda x, a: x + a
+            else:
+                opfunc = lambda x, a: x * a
+
+            if r == 'old':
+                item = opfunc(item, item)
+            else:
+                item = opfunc(item, int(r))
+
+            item = item % lcm
+
+            if item % self.test_divisor == 0:
+                monkeys[self.test_true_target].items.append(item)
+            else:
+                monkeys[self.test_false_target].items.append(item)
+
+
+# NOTE: part 2 incomplete
+def day_11(text):
+    lines = text.splitlines()
+    monkeys = []
+    new_monkey = []
+    count = 0
+
+    for line in lines:
+        if line:
+            new_monkey.append(line)
+        else:
+            monkeys.append(Monkey(count, new_monkey))
+            count += 1
+            new_monkey = []
+
+    monkeys.append(Monkey(count, new_monkey))
+
+    lcm = 1
+    for m in monkeys:
+        lcm *= m.test_divisor
+
+    print('lcm is', lcm)
+
+    assert len(monkeys) == 4
+    for r in range(20):
+        for m in monkeys:
+            m.run3(monkeys, lcm)
+            # m.run(monkeys)
+        print('done with round:', r)
+        for m in monkeys:
+            print(m.n, m.items)
+
+    monkey_biz = sorted(m.inspection_count for m in monkeys)
+    for m in monkey_biz:
+        print(m)
+    a = monkey_biz.pop()
+    b = monkey_biz.pop()
+    print(a * b)
+
+
+# NOTE: part 1 and 2 incomplete
+def day_12(text):
+    from random import shuffle
+    lines = text.splitlines()
+    g_elevation = lambda x: ord(x) - 97
+
+    grid = []
+    starting_pos = (0, 0, 0)
+    destination = (0, 0)
+    steps = 0
+    backtrack = None
+
+    for row in lines:
+        grid.append(list(row))
+
+    for y, row in enumerate(lines):
+        if 'S' in row:
+            x = row.index('S')
+            starting_pos = (x, y, 0)
+            break
+
+
+    for y, row in enumerate(lines):
+        if 'E' in row:
+            x = row.index('E')
+            destination = (x, y)
+            break
+
+    MOVES = {
+        'up': (0, -1),
+        'down': (0, 1),
+        'left': (-1, 0),
+        'right': (1, 0)
+    }
+
+    OPPOSITES = {
+        'up': 'down',
+        'down': 'up',
+        'left': 'right',
+        'right': 'left',
+    }
+
+    def get_adjacents(pos, grid):
+        x, y, current_elevation = pos
+
+        width = len(grid[0])
+        height = len(grid)
+        moves = []
+
+        if x + 1 < width and current_elevation >= g_elevation(grid[y][x+1]) - 1:
+            moves.append('right')
+
+        if x - 1 > -1 and current_elevation >= g_elevation(grid[y][x-1]) - 1:
+            moves.append('left')
+
+        if y + 1 < height and current_elevation >= g_elevation(grid[y+1][x]) - 1:
+            moves.append('down')
+
+        if y - 1 > -1 and current_elevation >= g_elevation(grid[y-1][x]) - 1:
+            moves.append('up')
+
+        return moves
+
+    step_counts = []
+    for i in range(1000):
+        steps = 0
+        pos = starting_pos
+        while True:
+            if (pos[0], pos[1]) == destination:
+                print('made it!')
+                step_counts.append(steps)
+                break
+
+            adjacents = get_adjacents(pos, grid)
+            if not adjacents or adjacents == [backtrack]:
+                steps = 1000
+                print('stuck')
+                break
+
+            if backtrack is None:
+                choice = adjacents.pop()
+                backtrack = OPPOSITES[choice]
+            elif backtrack in adjacents:
+                adjacents.remove(backtrack)
+                shuffle(adjacents)
+                choice = adjacents.pop()
+                backtrack = OPPOSITES[choice]
+
+            x, y, old_height = pos
+            print('moving', choice)
+            dx, dy = MOVES[choice]
+            x += dx
+            y += dy
+            pos = (x, y, g_elevation(grid[y][x]))
+            steps += 1
+        step_counts.append(steps)
+
+    print(step_counts)
+    print(min(step_counts))
+    for g in grid:
+        print(''.join(g))
