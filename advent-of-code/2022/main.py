@@ -16,79 +16,89 @@ SAMPLE = load('sample.txt')
 INPUT = load('input.txt')
 
 
-def day_13(text):
+def extract_integers(line):
+    return list(map(int, re.findall(r'(-?\d+)', line)))
+
+
+class SB:
+    def __init__(self, x, y, kind, closest_beacon):
+        self.x = x
+        self.y = y
+        self.kind = kind
+        self.closest_beacon = closest_beacon
+
+    def __repr__(self):
+        return f'({self.x},{self.y})'
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def distance(self, other):
+        return abs(self.x - other.x) + abs(self.y - other.y)
+
+
+def day_15_b(text, limit):
     lines = text.splitlines()
-    pairs = []
-    pair = []
+
+    sensors = []
+    beacons = []
+
+    excluded_rows = []
+    occupied = set()
+
     for line in lines:
-        if line and len(pair) < 2:
-            pair.append(eval(line))
-            if len(pair) == 2:
-                pairs.append(pair)
-                pair = []
+        sx, sy, bx, by = extract_integers(line)
+        beacon = SB(bx, by, 'beacon', None)
+        sensor = SB(sx, sy, 'sensor', beacon)
 
+        beacons.append(beacon)
+        sensors.append(sensor)
 
-    def ordered(left, right):
-        if isinstance(left, int) and isinstance(right, int):
-            if left == right:
-                return None
-            else:
-                return left < right
-        elif isinstance(left, list) and isinstance(right, list):
-            for i, val in enumerate(left):
-                try:
-                    right_val = right[i]
-                except IndexError:
-                    return False
-                result = ordered(val, right_val)
-                if result is None:
+        occupied.add((sx, sy))
+        occupied.add((bx, by))
+
+    for row in range(limit+1):
+        excluded_points = set()
+        for sensor in sensors:
+            distance = sensor.distance(sensor.closest_beacon)
+
+            left_x = sensor.x - distance
+            if left_x < 0:
+                left_x = 0
+
+            right_x = sx + distance
+            if right_x > limit:
+                right_x = limit
+
+            bottom_y = sy + distance
+            if bottom_y > limit:
+                bottom_y = limit
+
+            top_y = sy - distance
+            if top_y < 0:
+                top_y = 0
+
+            for y in range(top_y, bottom_y+1):
+                if y != row:
                     continue
-                else:
-                    return result
-            return True
-        elif isinstance(left, int) and isinstance(right, list):
-            return ordered([left], right)
-        elif isinstance(left, list) and isinstance(right, int):
-            return ordered(left, [right])
-        else:
-            raise ValueError(f'not sure what to do with: {left} {right}')
+                for x in range(left_x, right_x+1):
 
-    ordered_pairs = []
-    for i, p in enumerate(pairs):
-        left, right = p
-        if ordered(left, right):
-            ordered_pairs.append(i+1)
+                    point = SB(x, y, 'excl', None)
+                    raw_point = (x, y)
 
-    print('part 1:', sum(ordered_pairs))
+                    if sensor.distance(point) <= distance and raw_point not in occupied:
+                        excluded_points.add(raw_point)
 
-    def cmp(a, b):
-        result = ordered(a, b)
-        if result == True:
-            return 1
-        elif result == False:
-            return -1
-        else:
-            return 0
+        excluded_rows.append(excluded_points)
+    for i, row in enumerate(excluded_rows):
+        if i == 11 or i == 10 or i == 12:
+            print(row)
+        # if len(row) == limit - 1:
+        #     print(i, row)
+        #     break
 
-    packets = []
-    for line in lines:
-        if line:
-            packets.append(eval(line))
+day_15_a(SAMPLE, 10)
+day_15_b(SAMPLE, 20)
 
-    div_1 = [[2]]
-    div_2 = [[6]]
-    packets.append(div_1)
-    packets.append(div_2)
-
-    from functools import cmp_to_key
-    packets = sorted(packets, key=cmp_to_key(cmp), reverse=True)
-    for i, p in enumerate(packets):
-        print(i, p)
-
-    a = packets.index(div_1) + 1
-    b = packets.index(div_2) + 1
-    print('part 2:', a, b, a * b)
-
-
-day_13(SAMPLE)
-day_13(INPUT)
+# day_15_a(INPUT, 2000000)
+# day_15_b(INPUT, 4000000)

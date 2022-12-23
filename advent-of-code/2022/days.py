@@ -825,3 +825,378 @@ def day_12(text):
     print(min(step_counts))
     for g in grid:
         print(''.join(g))
+
+
+def day_13(text):
+    lines = text.splitlines()
+    pairs = []
+    pair = []
+    for line in lines:
+        if line and len(pair) < 2:
+            pair.append(eval(line))
+            if len(pair) == 2:
+                pairs.append(pair)
+                pair = []
+
+
+    def ordered(left, right):
+        if isinstance(left, int) and isinstance(right, int):
+            if left == right:
+                return None
+            else:
+                return left < right
+        elif isinstance(left, list) and isinstance(right, list):
+            for i, val in enumerate(left):
+                try:
+                    right_val = right[i]
+                except IndexError:
+                    return False
+                result = ordered(val, right_val)
+                if result is None:
+                    continue
+                else:
+                    return result
+            return True
+        elif isinstance(left, int) and isinstance(right, list):
+            return ordered([left], right)
+        elif isinstance(left, list) and isinstance(right, int):
+            return ordered(left, [right])
+        else:
+            raise ValueError(f'not sure what to do with: {left} {right}')
+
+    ordered_pairs = []
+    for i, p in enumerate(pairs):
+        left, right = p
+        if ordered(left, right):
+            ordered_pairs.append(i+1)
+
+    print('part 1:', sum(ordered_pairs))
+
+    def cmp(a, b):
+        result = ordered(a, b)
+        if result == True:
+            return 1
+        elif result == False:
+            return -1
+        else:
+            return 0
+
+    packets = []
+    for line in lines:
+        if line:
+            packets.append(eval(line))
+
+    div_1 = [[2]]
+    div_2 = [[6]]
+    packets.append(div_1)
+    packets.append(div_2)
+
+    from functools import cmp_to_key
+    packets = sorted(packets, key=cmp_to_key(cmp), reverse=True)
+    for i, p in enumerate(packets):
+        print(i, p)
+
+    a = packets.index(div_1) + 1
+    b = packets.index(div_2) + 1
+    print('part 2:', a, b, a * b)
+
+
+class RockPoint:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.at_rest = False
+
+    def __repr__(self):
+        return f'({self.x},{self.y})'
+
+    def fall(self, grid, with_floor=None):
+        try:
+            if grid[self.y+1][self.x] == '.':
+                self.y += 1
+            elif grid[self.y+1][self.x-1] == '.':
+                self.y += 1
+                self.x -= 1
+            elif grid[self.y+1][self.x+1] == '.':
+                self.y += 1
+                self.x += 1
+            else:
+                return 'stop'
+
+        except IndexError:
+            return 'out'
+
+    def fall_with_floor(self, grid):
+        try:
+            if grid[self.y+1][self.x] == '.':
+                self.y += 1
+            elif grid[self.y+1][self.x-1] == '.':
+                self.y += 1
+                self.x -= 1
+            elif grid[self.y+1][self.x+1] == '.':
+                self.y += 1
+                self.x += 1
+            else:
+                return 'stop'
+        except IndexError:
+            return '?'
+
+
+    def at_source(self):
+        return self.x == 500 and self.y == 0
+
+    # def fall(self, grid):
+
+
+
+class RockFormation:
+    def __init__(self, points):
+        self.points = points
+
+    def __repr__(self):
+        return f'{self.points}'
+
+
+
+def day_14_a(text):
+    lines = text.splitlines()
+
+    rocks = []
+    for line in lines:
+        raw_points = line.split('->')
+        raw_points = [p.strip().split(',') for p in raw_points]
+        points = []
+        for point in raw_points:
+            x, y = point
+            points.append(RockPoint(int(x), int(y)))
+        rocks.append(RockFormation(points))
+
+    x_values = []
+    y_values = []
+    for r in rocks:
+        for point in r.points:
+            x_values.append(point.x)
+            y_values.append(point.y)
+
+    height = max(y_values) + 1
+    width = max(x_values) + 1
+
+    def make_grid():
+        grid = []
+
+        for y in range(height):
+            grid.append([])
+            for _ in range(width):
+                grid[y].append('.')
+
+        print('height:', height)
+        print('width:', width)
+
+        for r in rocks:
+            for i, point in enumerate(r.points):
+                if i == 0:
+                    continue
+                start = r.points[i-1]
+                end = point
+
+                grid[start.y][start.x] = '#'
+                grid[end.y][end.x] = '#'
+
+                # draw vertically
+                if start.x == end.x:
+                    draw_y = min(start.y, end.y)
+                    for dy in range(abs(start.y - end.y)):
+                        grid[draw_y + dy][start.x] = '#'
+                # draw horizontally
+                elif start.y == end.y:
+                    draw_x = min(start.x, end.x)
+                    for dx in range(abs(start.x - end.x)):
+                        print('trying to draw at', start.y, draw_x + dx)
+                        grid[start.y][draw_x + dx] = '#'
+                else:
+                    raise ValueError('cannot draw diagonally', start, end)
+        return grid
+
+    grid = make_grid()
+
+    for row in grid:
+        print(''.join(row[450:]))
+
+    def emit_sand(grid):
+        sand = RockPoint(500, 0)
+
+        while True:
+            result = sand.fall(grid, with_floor=height+2)
+            if result in ('stop', 'out'):
+                break
+
+        if result == 'stop':
+            return sand
+        return None
+
+
+    sand_particles = []
+    while True:
+        print(' - - - - ')
+        rest_position = emit_sand(grid)
+        if rest_position is None:
+            break
+        sand_particles.append(rest_position)
+        grid[rest_position.y][rest_position.x] = 'o'
+        for row in grid:
+            print(''.join(row[450:]))
+
+    print('part 1:', len(sand_particles))
+
+
+def day_14_b(text):
+    lines = text.splitlines()
+
+    rocks = []
+    for line in lines:
+        raw_points = line.split('->')
+        raw_points = [p.strip().split(',') for p in raw_points]
+        points = []
+        for point in raw_points:
+            x, y = point
+            points.append(RockPoint(int(x), int(y)))
+        rocks.append(RockFormation(points))
+
+    x_values = []
+    y_values = []
+    for r in rocks:
+        for point in r.points:
+            x_values.append(point.x)
+            y_values.append(point.y)
+
+    height = max(y_values) + 1 + 2
+    width = max(x_values) + 1
+    width *= 2
+
+    def make_grid():
+        grid = []
+
+        for y in range(height):
+            grid.append([])
+            for _ in range(width):
+                grid[y].append('.')
+
+        print('height:', height)
+        print('width:', width)
+
+        for r in rocks:
+            for i, point in enumerate(r.points):
+                if i == 0:
+                    continue
+                start = r.points[i-1]
+                end = point
+
+                grid[start.y][start.x] = '#'
+                grid[end.y][end.x] = '#'
+
+                # draw vertically
+                if start.x == end.x:
+                    draw_y = min(start.y, end.y)
+                    for dy in range(abs(start.y - end.y)):
+                        grid[draw_y + dy][start.x] = '#'
+                # draw horizontally
+                elif start.y == end.y:
+                    draw_x = min(start.x, end.x)
+                    for dx in range(abs(start.x - end.x)):
+                        print('trying to draw at', start.y, draw_x + dx)
+                        grid[start.y][draw_x + dx] = '#'
+                else:
+                    raise ValueError('cannot draw diagonally', start, end)
+
+        for x in range(width):
+            grid[height-1][x] = '#'
+        return grid
+
+    grid = make_grid()
+
+    for row in grid:
+        print(''.join(row[450:510]))
+
+    def emit_sand(grid):
+        sand = RockPoint(500, 0)
+
+        while True:
+            result = sand.fall_with_floor(grid)
+            if result:
+                break
+
+        return sand
+
+
+    sand_particles = []
+    rest_position = RockPoint(0, 0)
+    while not rest_position.at_source():
+        print(' - - - - ')
+        rest_position = emit_sand(grid)
+        if rest_position is None:
+            break
+        sand_particles.append(rest_position)
+        grid[rest_position.y][rest_position.x] = 'o'
+        # for row in grid:
+            # print(''.join(row[450:510]))
+        print('rest_position:', rest_position)
+
+    print('part 2:', len(sand_particles))
+
+
+class SB:
+    def __init__(self, x, y, kind, closest_beacon):
+        self.x = x
+        self.y = y
+        self.kind = kind
+        self.closest_beacon = closest_beacon
+
+    def __repr__(self):
+        return f'({self.x},{self.y})'
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def distance(self, other):
+        return abs(self.x - other.x) + abs(self.y - other.y)
+
+
+def day_15_a(text, target_y):
+    lines = text.splitlines()
+
+    excluded_points = set()
+    occupied = set()
+
+    for line in lines:
+        sx, sy, bx, by = extract_integers(line)
+        beacon = SB(bx, by, 'beacon', None)
+        sensor = SB(sx, sy, 'sensor', beacon)
+
+        occupied.add((sx, sy))
+        occupied.add((bx, by))
+
+
+    for line in lines:
+        sx, sy, bx, by = extract_integers(line)
+        beacon = SB(bx, by, 'beacon', None)
+        sensor = SB(sx, sy, 'sensor', beacon)
+
+        distance = beacon.distance(sensor)
+
+        left_x = sx - distance
+        right_x = sx + distance
+        bottom_y = sy + distance
+        top_y = sy - distance
+
+        for y in range(top_y, bottom_y+1):
+            if y != target_y:
+                continue
+            for x in range(left_x, right_x+1):
+
+                point = SB(x, y, 'excl', None)
+                raw_point = (x, y)
+
+                if sensor.distance(point) <= distance and raw_point not in occupied:
+                    excluded_points.add(raw_point)
+
+    print(len(excluded_points))
