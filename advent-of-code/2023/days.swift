@@ -29,11 +29,33 @@ func readLines(filename: String) -> [String] {
     return lines
 }
 
+func readAsGrid(filename: String) -> [Point] {
+    var points: [Point] = []
+
+    let lines = readLines(filename: filename)
+    let height = lines.count
+    let width = lines[0].count
+
+    for (y, line) in lines.enumerated() {
+        for (x, ch) in line.enumerated() {
+            points.append(Point(
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                value: String(ch)))
+        }
+    }
+
+    return points
+}
+
 struct Point: Hashable {
     var x: Int
     var y: Int
     var width: Int
     var height: Int
+    var value: String = ""
 
     func neighbors(width: Int, height: Int) -> [Point] {
         var n: [Point] = []
