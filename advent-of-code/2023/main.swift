@@ -7,51 +7,81 @@ import Foundation
 let EXAMPLE = "/Users/kris/Documents/aoc23/example.txt"
 let INPUT = "/Users/kris/Documents/aoc23/input.txt"
 
-func cardMatches(line: String) -> Int {
-    let s1 = line.split(separator: ": ")
-    let s2 = s1[1].split(separator: "|")
+func singleSeedMapper(rules: [(Int, Int, Int)], value: Int) -> Int {
+    for rule in rules {
+        let (dest, source, length) = rule
+        let offset = source - dest
+        if value >= source && value <= source+length {
+            return value - offset
+        }
+    }
 
-    let winning = s2[0].split(separator: " ").compactMap({ Int($0) })
-    let have = s2[1].split(separator: " ").compactMap({ Int($0) })
-
-    let winningSet = Set<Int>(winning)
-    let haveSet = Set<Int>(have)
-
-    return winningSet.intersection(haveSet).count
+    return value
 }
 
-func day4() {
+func seedMapper(maps: [[(Int, Int, Int)]], value: Int) -> Int {
+    var result = value
+    for map in maps {
+        result = singleSeedMapper(rules: map, value: result)
+    }
+
+    return result
+}
+
+func rawToRules(raw: [String]) -> [(Int, Int, Int)] {
+    var values: [(Int, Int, Int)] = []
+    for rawLine in raw {
+        let split = rawLine.split(separator: " ")
+        let tuple: (Int, Int, Int) = (Int(split[0])!, Int(split[1])!, Int(split[2])!)
+        values.append(tuple)
+    }
+    return values
+}
+
+
+func day5() {
+
+
     let lines = readLines(filename: INPUT)
+    let seedData = lines[0].split(separator: " ").compactMap({ Int($0) } )
+    var seeds: [Int] = []
 
-    var cardCopies: [Int: Int] = [:]
-    var knownMatchCounts: [Int: Int] = [:]
-    var copiesToProcess: [Int] = []
+    for (i, value) in seedData.enumerated() {
+        if i % 2 == 0 { continue }
+        let seed = seedData[i-1]
+        let range = value
 
-    for (i, line) in lines.enumerated() {
-        cardCopies[i+1] = 1
+        for i in 0..<value {
+            seeds.append(seed + i)
+        }
+        print("seed", seed, "range", range)
+    }
 
-        let matches = cardMatches(line: line)
-        knownMatchCounts[i+1] = matches
-        if matches > 0 {
-            for offset in 1...matches {
-                copiesToProcess.append(i+offset)
-            }
+//    print("seeds:", seeds)
+
+    var maps: [[(Int, Int, Int)]] = []
+    var currentMap: [String] = []
+
+    for line in lines[2...] {
+        if line.contains("map:") {
+            maps.append(rawToRules(raw: currentMap))
+            currentMap = []
+        } else if !line.isEmpty {
+            currentMap.append(line)
         }
     }
 
-    while !copiesToProcess.isEmpty {
-        let index = copiesToProcess.popLast()!
-        cardCopies[index+1]! += 1
-        let matches = knownMatchCounts[index+1]!
-        if matches > 0 {
-            for offset in 1...matches {
-                copiesToProcess.append(index+offset)
-            }
+    maps.append(rawToRules(raw: currentMap))
+    print("maps:", maps)
+
+    var minLocation: Int = Int.max
+    for (i, seed) in seeds.enumerated() {
+        let location = seedMapper(maps: maps, value: seed)
+        if location < minLocation {
+            minLocation = location
         }
     }
-
-    print(cardCopies)
-    print(cardCopies.values.reduce(0, +))
+    print(minLocation)
 }
 
-day4()
+day5()
