@@ -341,7 +341,6 @@ func rawToRules(raw: [String]) -> [(Int, Int, Int)] {
 
 
 func day5() {
-
     let lines = readLines(filename: INPUT)
     let seedData = lines[0].split(separator: " ").compactMap({ Int($0) } )
     var seeds: [Int] = []
@@ -356,8 +355,6 @@ func day5() {
         }
         print("seed", seed, "range", range)
     }
-
-//    print("seeds:", seeds)
 
     var maps: [[(Int, Int, Int)]] = []
     var currentMap: [String] = []
@@ -382,4 +379,283 @@ func day5() {
         }
     }
     print(minLocation)
+}
+
+func day6() {
+
+    var result = 1
+
+    // input
+    let times: [Int] = [47707566]
+    let distances: [Int] = [282107911471062]
+
+    for (raceIndex, time) in times.enumerated() {
+        var waysToWin = 0
+
+        for holdTime in 1..<time {
+            let speed = holdTime
+            let timeLeft = time - holdTime
+            let distance = timeLeft * speed
+
+            if distance > distances[raceIndex] {
+                waysToWin += 1
+            }
+        }
+        result *= waysToWin
+        waysToWin = 0
+    }
+
+    print(result)
+}
+
+let face: [String: Int] = [
+    "T": 10,
+    "J": 1,
+    "Q": 12,
+    "K": 13,
+    "A": 14,
+]
+
+enum HandType: Int {
+    case five = 7
+    case four = 6
+    case fh = 5
+    case three = 4
+    case twopair = 3
+    case pair = 2
+    case high = 1
+}
+
+struct Hand {
+    var raw: String
+    var values: [Int]
+    var bid: Int
+    var type: HandType
+
+    init(raw: String, bid: Int) {
+        self.values = []
+        self.raw = raw
+        self.bid = bid
+
+        var jokers = 0
+
+        for ch in raw {
+            if ch == "J" {
+                jokers += 1
+            }
+            if let v = Int(String(ch)) {
+                self.values.append(v)
+            } else {
+                self.values.append(face[String(ch)]!)
+            }
+        }
+
+        let counts = self.values.reduce(into: [:]) { $0[$1, default: 0] += 1 }
+
+        if counts.values.contains(5) {
+            self.type = .five
+        } else if counts.values.contains(4) {
+            self.type = .four
+        } else if counts.values.contains(3) && counts.values.contains(2) {
+            self.type = .fh
+        } else if counts.values.contains(3) {
+            self.type = .three
+        } else if counts.values.contains(2) && counts.count == 3 {
+            self.type = .twopair
+        } else if counts.values.contains(2) {
+            self.type = .pair
+        } else {
+            self.type = .high
+        }
+
+        guard jokers > 0 else { return }
+        guard self.type != .five else { return }
+
+        if jokers > 3 {
+            // JJJJ2
+            // JJJJJ
+            self.type = .five
+            return
+        }
+
+        if self.type == .four {
+            // AAAAJ
+            self.type = .five
+            return
+        }
+
+        if self.type == .fh {
+            // AAAJJ or JJJAA
+            self.type = .five
+            return
+        }
+
+        if self.type == .three && jokers == 1 {
+            // AAA2J
+            self.type = .four
+            return
+        }
+
+        if self.type == .three && jokers == 3 {
+            // JJJ23
+            self.type = .four
+            return
+        }
+
+        if self.type == .twopair && jokers == 1 {
+            // AA22J
+            self.type = .fh
+            return
+        }
+
+        if self.type == .twopair && jokers > 1 {
+            // AAJJ4
+            self.type = .four
+            return
+        }
+
+        if self.type == .pair {
+            // AA23J
+            // JJ234
+            self.type = .three
+            return
+        }
+
+        if self.type == .high {
+            // J2345
+            self.type = .pair
+            return
+        }
+
+
+    }
+}
+
+func compareHand(lhs: Hand, rhs: Hand) -> Bool {
+    print("compare", lhs.raw, rhs.raw)
+    if lhs.type != rhs.type {
+        return lhs.type.rawValue > rhs.type.rawValue
+    }
+
+    for (i, val) in lhs.values.enumerated() {
+        if val == rhs.values[i] { continue }
+        if val > rhs.values[i] {
+            return true
+        } else {
+            return false
+        }
+    }
+    return false
+}
+
+func day7() {
+    let lines = readLines(filename: INPUT)
+    var result = 0
+
+    var hands: [Hand] = []
+
+    for line in lines {
+        let values = line.split(separator: " ")
+        let hand = Hand(raw: String(values[0]), bid: Int(values[1])!)
+        hands.append(hand)
+    }
+
+    hands.sort(by: { compareHand(lhs: $0, rhs: $1)})
+    print(hands)
+
+    for (i, hand) in hands.enumerated() {
+        let rank = hands.count - i
+        print(hand.raw, rank, hand.bid, rank * hand.bid)
+        result += rank * hand.bid
+    }
+
+    print(result)
+}
+
+
+struct Node {
+    var value: String
+    var left: String
+    var right: String
+}
+
+func day8() {
+    let lines = readLines(filename: EXAMPLE)
+
+    var steps: [String] = []
+    for ch in lines[0] {
+        steps.append(String(ch))
+    }
+
+    var ghostNodes: [String] = []
+    var nodes: [String:Node] = [:]
+
+    for line in lines[1...] {
+        let values = line.split(separator: " ")
+        let name = String(values[0])
+
+        if name.last == "A" {
+            ghostNodes.append(name)
+        }
+
+        var left = values[2]
+        left.removeFirst()
+        left.removeLast()
+
+        var right = values[3]
+        right.removeLast()
+        print(name, left, right)
+        nodes[name] = Node(value: name, left: String(left), right: String(right))
+    }
+
+    print(ghostNodes)
+
+    var stepCount = 1
+    var index = 0
+
+    var stepsToZ: [Int: [Int]] = [:]
+    for (i, _) in ghostNodes.enumerated() {
+        stepsToZ[i] = []
+    }
+
+    while true {
+        // advance all ghost nodes
+        for (i, current) in ghostNodes.enumerated() {
+            let go = steps[index % steps.count]
+            let nextNode = nodes[current]!
+
+            if go == "L" {
+                ghostNodes[i] = nextNode.left
+            } else {
+                ghostNodes[i] = nextNode.right
+            }
+
+            if ghostNodes[i].last == "Z" {
+                stepsToZ[i]?.append(stepCount)
+            }
+        }
+
+        // check all ghost nodes
+        if ghostNodes.allSatisfy({ $0.last == "Z" }){
+            break
+        }
+
+        if stepCount % 1000000 == 0 {
+            print("\(stepCount) - \(ghostNodes)")
+            print(stepsToZ)
+
+            var minimums: [Int] = []
+            for factors in stepsToZ.values {
+                let sortedFactors = factors.sorted()
+                minimums.append(sortedFactors[0])
+            }
+
+            // lcm was done with python's math.lcm because I am lazy
+            print("mins:", minimums)
+        }
+        stepCount += 1
+        index += 1
+
+    }
+    print(stepCount)
 }
