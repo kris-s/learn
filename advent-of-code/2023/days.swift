@@ -659,3 +659,50 @@ func day8() {
     }
     print(stepCount)
 }
+
+func extrapolate(_ values: [Int]) -> Int {
+    var workingValues: [Int] = values
+    var lines: [[Int]] = [values]
+    print("in extrapolate with \(values)")
+    while true {
+        var differences: [Int] = []
+        for (i, v) in workingValues.enumerated() {
+            guard i != 0 else { continue }
+            differences.append(v - workingValues[i-1])
+        }
+        lines.append(differences)
+        if differences.allSatisfy({ $0 == 0 }) {
+            break
+        }
+        workingValues = differences
+    }
+
+    var result = 0
+    for (i, _) in lines.enumerated().reversed() {
+//        print(l, i)
+        guard i < lines.count - 1 else { continue }
+        let value = lines[i+1][0]
+        result = value - result
+    }
+    result = values[0] - result
+
+    return result
+}
+
+func day9() {
+    var lines: [[Int]] = []
+
+    for line in readLines(filename: INPUT) {
+        lines.append(line.split(separator: " ").compactMap( { Int($0) }))
+    }
+
+    var result = 0
+    for line in lines {
+        let next = extrapolate(line)
+        print("\(line) extrapolates to \(next)")
+        result += next
+    }
+
+    print(result)
+}
+
