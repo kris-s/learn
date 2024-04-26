@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -43,10 +44,13 @@ func main() {
 		"🏴‍☠️",
 	}
 
-	time := fmt.Sprint(time.Now())[:19]
+	now := time.Now()
+	time := now.Format("Monday, 2 January 2006    15:04:05")
 	emoji := emojis[rng.Intn(len(emojis))]
+	bar := strings.Repeat("━", len(time)+6)
 
-	fmt.Println("┏━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+	fmt.Printf("┏%s┓\n", bar)
 	fmt.Printf("┃   %s   ┃ %s\n", time, emoji)
-	fmt.Println("┗━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+	fmt.Printf("┗%s┛\n", bar)
+
 }
