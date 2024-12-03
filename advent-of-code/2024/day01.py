@@ -1,6 +1,6 @@
-
 from pathlib import Path
 from collections import Counter
+
 
 def load(path):
     path = Path(path)
