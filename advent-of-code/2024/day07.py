@@ -48,9 +48,6 @@ def permutations(length):
     return perms
 
 
-
-
-
 def check(target, source_values):
     # for combo in itertools.combinations_with_replacement(OPS, len(source_values) - 1):
     for combo in permutations(len(source_values) - 1):
@@ -87,3 +84,4 @@ print('p1', total)
 
 # p2 150299506253388
 #    152711512114057 (too low!)
+#    162042343638683
