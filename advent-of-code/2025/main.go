@@ -52,6 +52,14 @@ func sumInts(values []int) int {
 	return result
 }
 
+func mulInts(values []int) int {
+	result := 1
+	for i := range values {
+		result *= values[i]
+	}
+	return result
+}
+
 func intOrPanic(raw string) int {
 	value, err := strconv.Atoi(strings.TrimSpace(raw))
 	if err != nil {
@@ -104,6 +112,8 @@ func main() {
 		day4("d4s.input", "d4i.input")
 	case 5:
 		day5("d5s.input", "d5i.input")
+	case 6:
+		day6("d6s.input", "d6i.input")
 	default:
 		fmt.Println("Invalid day choice:", *dayChoice)
 	}
@@ -176,6 +186,130 @@ func (g *Grid) Adjacents(x, y int) []Point {
 	}
 
 	return points
+}
+
+func day6(samplefile string, inputfile string) {
+	// 4277556
+	day6Math(samplefile)
+	// 4412382293768
+	day6Math(inputfile)
+	// 3263827
+	day6SquidMath(samplefile)
+	// 7858808482092
+	day6SquidMath(inputfile)
+
+}
+
+func day6SquidMath(filename string) {
+	input := getInput(filename)
+
+	width := 0
+	height := 0
+	ops := []string{}
+	textGrid := []string{}
+
+	for _, line := range strings.Split(input, "\n") {
+		if len(line) > width {
+			width = len(line)
+		}
+		if strings.Contains(line, "+") {
+			ops = strings.Fields(line)
+			continue
+		}
+		if len(line) > 0 {
+			textGrid = append(textGrid, line)
+			height++
+		}
+	}
+
+	columns := []string{}
+
+	for x := width - 1; x > -1; x-- {
+		col := ""
+		for y := 0; y < height; y++ {
+			col += string(textGrid[y][x])
+		}
+		columns = append(columns, col)
+	}
+
+	results := []int{}
+	numbers := []int{}
+	opIndex := len(ops) - 1
+
+	for _, col := range columns {
+		if opIndex < 0 {
+			break
+		}
+
+		value, err := strconv.Atoi(strings.TrimSpace(col))
+		if err == nil {
+			numbers = append(numbers, value)
+		}
+
+		if strings.TrimSpace(col) == "" {
+			if ops[opIndex] == "+" {
+				results = append(results, sumInts(numbers))
+			} else {
+				results = append(results, mulInts(numbers))
+			}
+			numbers = []int{}
+			opIndex--
+		}
+	}
+
+	if ops[0] == "+" {
+		results = append(results, sumInts(numbers))
+	} else {
+		results = append(results, mulInts(numbers))
+	}
+
+	fmt.Println("part two:", sumInts(results))
+}
+
+func day6Math(filename string) {
+	input := getInput(filename)
+
+	rows := [][]int{}
+	ops := []string{}
+
+	for _, line := range strings.Split(input, "\n") {
+		if strings.Contains(line, "+") {
+			ops = strings.Fields(line)
+			continue
+		}
+
+		row := []int{}
+
+		for _, value := range strings.Fields(line) {
+			row = append(row, intOrPanic(value))
+		}
+
+		if len(row) > 0 {
+			rows = append(rows, row)
+		}
+	}
+
+	results := []int{}
+
+	for x := range len(rows[0]) {
+		result := 0
+		for y := range rows {
+			if y == 0 {
+				result = rows[y][x]
+				continue
+			}
+
+			if ops[x] == "+" {
+				result += rows[y][x]
+			} else {
+				result *= rows[y][x]
+			}
+
+		}
+		results = append(results, result)
+	}
+
+	fmt.Println("part one:", sumInts(results))
 }
 
 func day5(samplefile string, inputfile string) {
