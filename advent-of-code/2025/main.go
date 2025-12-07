@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"embed"
 	"flag"
 	"fmt"
@@ -69,6 +70,26 @@ func stringToDigits(raw string) []int {
 	return result
 }
 
+func mergeRanges(a, b Range) (Range, bool) {
+	if a.Lower <= b.Lower && a.Upper >= b.Lower-1 {
+		if a.Upper > b.Upper {
+			return Range{a.Lower, a.Upper}, true
+		} else {
+			return Range{a.Lower, b.Upper}, true
+		}
+	}
+
+	if b.Lower <= a.Lower && b.Upper >= a.Lower-1 {
+		if a.Upper > b.Upper {
+			return Range{a.Lower, a.Upper}, true
+		} else {
+			return Range{a.Lower, b.Upper}, true
+		}
+	}
+
+	return Range{}, false
+}
+
 func main() {
 	flag.Parse()
 
@@ -81,6 +102,8 @@ func main() {
 		day3("d3s.input", "d3i.input")
 	case 4:
 		day4("d4s.input", "d4i.input")
+	case 5:
+		day5("d5s.input", "d5i.input")
 	default:
 		fmt.Println("Invalid day choice:", *dayChoice)
 	}
@@ -153,6 +176,103 @@ func (g *Grid) Adjacents(x, y int) []Point {
 	}
 
 	return points
+}
+
+func day5(samplefile string, inputfile string) {
+	// 3
+	day5Fresh(samplefile)
+	// 770
+	day5Fresh(inputfile)
+	// 14
+	day5AllOptions(samplefile)
+	// 357674099117260
+	day5AllOptions(inputfile)
+}
+
+func day5AllOptions(filename string) {
+	ranges, _ := day5RangesIds(filename)
+
+	slices.SortFunc(ranges, func(a, b Range) int {
+		return cmp.Compare(a.Lower, b.Lower)
+	})
+
+	count := 0
+
+	for {
+	RangeLoop:
+		for i := range ranges {
+			for j := range ranges {
+				if i == j {
+					continue
+				}
+				merged, ok := mergeRanges(ranges[i], ranges[j])
+
+				if ok {
+					ranges[i] = merged
+					ranges = slices.Delete(ranges, j, j+1)
+					slices.SortFunc(ranges, func(a, b Range) int {
+						return cmp.Compare(a.Lower, b.Lower)
+					})
+					break RangeLoop
+				}
+			}
+		}
+		count++
+		if count > 1000 {
+			break
+		}
+	}
+
+	total := 0
+	for _, r := range ranges {
+		total += r.Upper - r.Lower + 1
+	}
+	fmt.Println("part two:", total)
+}
+
+func day5Fresh(filename string) {
+	ranges, ids := day5RangesIds(filename)
+
+	freshIds := []int{}
+
+TopLoop:
+	for _, id := range ids {
+		for _, r := range ranges {
+			if id >= r.Lower && id <= r.Upper {
+				freshIds = append(freshIds, id)
+				continue TopLoop
+			}
+		}
+	}
+
+	fmt.Println("part one:", len(freshIds))
+}
+
+func day5RangesIds(filename string) ([]Range, []int) {
+	input := getInput(filename)
+
+	ranges := []Range{}
+	ids := []int{}
+
+	parseAsRange := true
+
+	for _, line := range strings.Split(input, "\n") {
+		if line == "" {
+			parseAsRange = false
+			continue
+		}
+
+		if parseAsRange {
+			pair := strings.Split(line, "-")
+			lower := intOrPanic(pair[0])
+			upper := intOrPanic(pair[1])
+			ranges = append(ranges, Range{lower, upper})
+		} else {
+			ids = append(ids, intOrPanic(line))
+		}
+	}
+
+	return ranges, ids
 }
 
 func day4(samplefile string, inputfile string) {
