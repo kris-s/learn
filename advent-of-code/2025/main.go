@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -58,14 +59,28 @@ func intOrPanic(raw string) int {
 	return value
 }
 
+func stringToDigits(raw string) []int {
+	result := []int{}
+
+	for _, ch := range raw {
+		result = append(result, intOrPanic(string(ch)))
+	}
+
+	return result
+}
+
 func main() {
 	flag.Parse()
 
 	switch *dayChoice {
 	case 1:
-		day1("d1s.txt", "d1i.txt")
+		day1("d1s.input", "d1i.input")
 	case 2:
-		day2("d2s.txt", "d2i.txt")
+		day2("d2s.input", "d2i.input")
+	case 3:
+		day3("d3s.input", "d3i.input")
+	case 4:
+		day4("d4s.input", "d4i.input")
 	default:
 		fmt.Println("Invalid day choice:", *dayChoice)
 	}
@@ -73,6 +88,224 @@ func main() {
 
 type Range struct {
 	Lower, Upper int
+}
+
+type Point struct {
+	X, Y int
+}
+
+type Grid struct {
+	Width, Height int
+	Points        []rune
+}
+
+func (g *Grid) ValueAt(x, y int) rune {
+	return g.Points[y*g.Width+x]
+}
+
+func (g *Grid) SetAt(x, y int, value rune) {
+	g.Points[y*g.Width+x] = value
+}
+
+func (g *Grid) Adjacents(x, y int) []Point {
+	points := []Point{}
+
+	// left side
+	if x > 0 {
+		// up
+		if y > 0 {
+			points = append(points, Point{x - 1, y - 1})
+		}
+
+		// middle
+		points = append(points, Point{x - 1, y})
+
+		// down
+		if y < g.Height-1 {
+			points = append(points, Point{x - 1, y + 1})
+		}
+	}
+
+	// top middle
+	if y > 0 {
+		points = append(points, Point{x, y - 1})
+	}
+
+	// bottom middle
+	if y < g.Height-1 {
+		points = append(points, Point{x, y + 1})
+	}
+
+	// right side
+	if x < g.Width-1 {
+		// up
+		if y > 0 {
+			points = append(points, Point{x + 1, y - 1})
+		}
+
+		// middle
+		points = append(points, Point{x + 1, y})
+
+		// down
+		if y < g.Height-1 {
+			points = append(points, Point{x + 1, y + 1})
+		}
+	}
+
+	return points
+}
+
+func day4(samplefile string, inputfile string) {
+	// 13
+	day4Rolls(samplefile)
+	// 1320
+	day4Rolls(inputfile)
+	// 43
+	day4RollsSim(samplefile)
+	// 8354
+	day4RollsSim(inputfile)
+
+}
+
+func day4RollsSim(filename string) {
+	grid := day4Grid(filename)
+
+	total := 0
+
+	for {
+		accessible := day4Accessible(&grid)
+
+		if len(accessible) == 0 {
+			break
+		}
+
+		total += len(accessible)
+
+		for _, p := range accessible {
+			grid.SetAt(p.X, p.Y, '.')
+		}
+	}
+
+	fmt.Println("part two:", total)
+}
+
+func day4Rolls(filename string) {
+	grid := day4Grid(filename)
+
+	accessible := day4Accessible(&grid)
+
+	fmt.Println("part one:", len(accessible))
+}
+
+func day4Accessible(grid *Grid) []Point {
+	accessible := []Point{}
+
+	for x := range grid.Width {
+		for y := range grid.Height {
+			if grid.ValueAt(x, y) != '@' {
+				continue
+			}
+
+			count := 0
+
+			for _, p := range grid.Adjacents(x, y) {
+				if grid.ValueAt(p.X, p.Y) == '@' {
+					count++
+				}
+			}
+
+			if count < 4 {
+				accessible = append(accessible, Point{x, y})
+			}
+		}
+	}
+
+	return accessible
+}
+
+func day4Grid(filename string) Grid {
+	input := getInput(filename)
+
+	grid := Grid{}
+
+	for y, row := range strings.Split(input, "\n") {
+		if y == 0 {
+			grid.Width = len(row)
+		}
+		grid.Height = y
+
+		for _, value := range row {
+			grid.Points = append(grid.Points, value)
+		}
+	}
+
+	return grid
+}
+
+func day3(samplefile string, inputfile string) {
+	// 357
+	day3Joltage(samplefile)
+	// 16927
+	day3Joltage(inputfile)
+	// 3121910778619
+	day3BigJoltage(samplefile)
+	// 167384358365132
+	day3BigJoltage(inputfile)
+}
+
+func day3BigJoltage(filename string) {
+	input := getInput(filename)
+
+	joltages := []int{}
+
+	for _, entry := range strings.Split(input, "\n") {
+		batteries := stringToDigits(entry)
+		if len(batteries) == 0 {
+			continue
+		}
+
+		joltage := 0
+		upper := 0
+		lower := len(batteries) - 11
+		scale := 100000000000
+
+		for i := range 12 {
+			choice := slices.Max(batteries[upper:lower])
+
+			relativeIndex := slices.Index(batteries[upper:lower], choice)
+
+			upper += relativeIndex + 1
+			lower = len(batteries) - (11 - (i + 1))
+
+			joltage += choice * scale
+			scale /= 10
+		}
+
+		joltages = append(joltages, joltage)
+	}
+
+	fmt.Println("part two:", sumInts(joltages))
+}
+
+func day3Joltage(filename string) {
+	input := getInput(filename)
+
+	joltages := []int{}
+
+	for _, entry := range strings.Split(input, "\n") {
+		batteries := stringToDigits(entry)
+		if len(batteries) == 0 {
+			continue
+		}
+
+		first := slices.Max(batteries[0 : len(batteries)-1])
+		firstIndex := slices.Index(batteries, first)
+		second := slices.Max(batteries[firstIndex+1 : len(batteries)])
+
+		joltages = append(joltages, first*10+second)
+	}
+
+	fmt.Println("part one:", sumInts(joltages))
 }
 
 func day2(samplefile string, inputfile string) {
