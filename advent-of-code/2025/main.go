@@ -206,45 +206,13 @@ func day7(samplefile string, inputfile string) {
 	// 1642
 	day7Beam(inputfile)
 	// 40
-	day7QuantumBeam2(samplefile)
+	day7QuantumBeam(samplefile)
 	// 47274292756692
-	day7QuantumBeam2(inputfile)
+	day7QuantumBeam(inputfile)
 
 }
 
-func serializePaths(paths [][]int) []string {
-	result := []string{}
-
-	for _, path := range paths {
-		result = append(result, fmt.Sprint(path))
-	}
-
-	return result
-}
-
-func deserializePaths(paths []string) [][]int {
-	result := [][]int{}
-
-	for _, path := range paths {
-		intPath := []int{}
-
-		path = strings.TrimPrefix(path, "[")
-		path = strings.TrimSuffix(path, "]")
-
-		fields := strings.Fields(path)
-
-		for _, stringValue := range fields {
-			intPath = append(intPath, intOrPanic(stringValue))
-		}
-
-		result = append(result, intPath)
-
-	}
-
-	return result
-}
-
-func day7QuantumBeam2(filename string) {
+func day7QuantumBeam(filename string) {
 	input := getInput(filename)
 
 	const start = 'S'
@@ -277,10 +245,9 @@ func day7QuantumBeam2(filename string) {
 	for y := range grid.Height - 1 {
 		nextPossible := make(map[int]int)
 
-		fmt.Printf("y=%d h=%d\n", y+1, grid.Height-1)
+		// fmt.Printf("y=%d h=%d\n", y+1, grid.Height-1)
 
 		for x, xCount := range currentPossible {
-			// fmt.Printf("x=%d xCount=%d\n", x, xCount)
 			below := grid.ValueAt(x, y+1)
 
 			if below == splitter {
@@ -317,72 +284,6 @@ func day7QuantumBeam2(filename string) {
 	}
 
 	fmt.Println("part two:", paths)
-}
-
-func day7QuantumBeam(filename string) {
-	input := getInput(filename)
-
-	const start = 'S'
-	const splitter = '^'
-	const empty = '.'
-	const beam = '|'
-
-	startX := 0
-
-	grid := Grid{}
-
-	for i, line := range strings.Split(input, "\n") {
-		if i == 0 {
-			grid.Width = len(line)
-		}
-		grid.Height = i
-
-		for x, ch := range line {
-			if ch == start {
-				startX = x
-			}
-			grid.Points = append(grid.Points, ch)
-		}
-	}
-
-	paths := [][]int{
-		[]int{startX},
-	}
-
-	for y := range grid.Height - 1 {
-		fmt.Println(y+1, grid.Height-1)
-		newPaths := [][]int{}
-
-		for _, path := range paths {
-
-			currentX := path[len(path)-1]
-			below := grid.ValueAt(currentX, y+1)
-
-			// maybe we can skip bounds checking?
-			if below == splitter {
-				left := slices.Clone(path)
-				left = append(left, currentX-1)
-				newPaths = append(newPaths, left)
-
-				right := slices.Clone(path)
-				right = append(right, currentX+1)
-				newPaths = append(newPaths, right)
-			} else {
-				down := slices.Clone(path)
-				down = append(down, currentX)
-				newPaths = append(newPaths, down)
-			}
-		}
-
-		serialized := serializePaths(newPaths)
-		slices.Sort(serialized)
-		compacted := slices.Compact(serialized)
-		deserialized := deserializePaths(compacted)
-		paths = deserialized
-
-	}
-
-	fmt.Println("part two:", len(paths))
 }
 
 func day7Beam(filename string) {
@@ -432,7 +333,7 @@ func day7Beam(filename string) {
 		}
 	}
 
-	grid.Print()
+	// grid.Print()
 
 	fmt.Println("part one:", splits)
 }
