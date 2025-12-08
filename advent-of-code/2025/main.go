@@ -114,6 +114,8 @@ func main() {
 		day5("d5s.input", "d5i.input")
 	case 6:
 		day6("d6s.input", "d6i.input")
+	case 7:
+		day7("d7s.input", "d7i.input")
 	default:
 		fmt.Println("Invalid day choice:", *dayChoice)
 	}
@@ -186,6 +188,253 @@ func (g *Grid) Adjacents(x, y int) []Point {
 	}
 
 	return points
+}
+
+func (g *Grid) Print() {
+	for y := range g.Height {
+		line := ""
+		for x := 0; x < g.Width; x++ {
+			line += string(g.ValueAt(x, y))
+		}
+		fmt.Println(line)
+	}
+}
+
+func day7(samplefile string, inputfile string) {
+	// 21
+	day7Beam(samplefile)
+	// 1642
+	day7Beam(inputfile)
+	// 40
+	day7QuantumBeam2(samplefile)
+	// 47274292756692
+	day7QuantumBeam2(inputfile)
+
+}
+
+func serializePaths(paths [][]int) []string {
+	result := []string{}
+
+	for _, path := range paths {
+		result = append(result, fmt.Sprint(path))
+	}
+
+	return result
+}
+
+func deserializePaths(paths []string) [][]int {
+	result := [][]int{}
+
+	for _, path := range paths {
+		intPath := []int{}
+
+		path = strings.TrimPrefix(path, "[")
+		path = strings.TrimSuffix(path, "]")
+
+		fields := strings.Fields(path)
+
+		for _, stringValue := range fields {
+			intPath = append(intPath, intOrPanic(stringValue))
+		}
+
+		result = append(result, intPath)
+
+	}
+
+	return result
+}
+
+func day7QuantumBeam2(filename string) {
+	input := getInput(filename)
+
+	const start = 'S'
+	const splitter = '^'
+	const empty = '.'
+	const beam = '|'
+
+	startX := 0
+
+	grid := Grid{}
+
+	for i, line := range strings.Split(input, "\n") {
+		if i == 0 {
+			grid.Width = len(line)
+		}
+		grid.Height = i
+
+		for x, ch := range line {
+			if ch == start {
+				startX = x
+			}
+			grid.Points = append(grid.Points, ch)
+		}
+	}
+
+	currentPossible := map[int]int{
+		startX: 1,
+	}
+
+	for y := range grid.Height - 1 {
+		nextPossible := make(map[int]int)
+
+		fmt.Printf("y=%d h=%d\n", y+1, grid.Height-1)
+
+		for x, xCount := range currentPossible {
+			// fmt.Printf("x=%d xCount=%d\n", x, xCount)
+			below := grid.ValueAt(x, y+1)
+
+			if below == splitter {
+				_, ok := nextPossible[x-1]
+				if ok {
+					nextPossible[x-1] += xCount
+				} else {
+					nextPossible[x-1] = xCount
+				}
+
+				_, ok = nextPossible[x+1]
+				if ok {
+					nextPossible[x+1] += xCount
+				} else {
+					nextPossible[x+1] = xCount
+				}
+			} else {
+				_, ok := nextPossible[x]
+				if ok {
+					nextPossible[x] += xCount
+				} else {
+					nextPossible[x] = xCount
+				}
+			}
+		}
+
+		currentPossible = nextPossible
+
+	}
+
+	paths := 0
+	for _, value := range currentPossible {
+		paths += value
+	}
+
+	fmt.Println("part two:", paths)
+}
+
+func day7QuantumBeam(filename string) {
+	input := getInput(filename)
+
+	const start = 'S'
+	const splitter = '^'
+	const empty = '.'
+	const beam = '|'
+
+	startX := 0
+
+	grid := Grid{}
+
+	for i, line := range strings.Split(input, "\n") {
+		if i == 0 {
+			grid.Width = len(line)
+		}
+		grid.Height = i
+
+		for x, ch := range line {
+			if ch == start {
+				startX = x
+			}
+			grid.Points = append(grid.Points, ch)
+		}
+	}
+
+	paths := [][]int{
+		[]int{startX},
+	}
+
+	for y := range grid.Height - 1 {
+		fmt.Println(y+1, grid.Height-1)
+		newPaths := [][]int{}
+
+		for _, path := range paths {
+
+			currentX := path[len(path)-1]
+			below := grid.ValueAt(currentX, y+1)
+
+			// maybe we can skip bounds checking?
+			if below == splitter {
+				left := slices.Clone(path)
+				left = append(left, currentX-1)
+				newPaths = append(newPaths, left)
+
+				right := slices.Clone(path)
+				right = append(right, currentX+1)
+				newPaths = append(newPaths, right)
+			} else {
+				down := slices.Clone(path)
+				down = append(down, currentX)
+				newPaths = append(newPaths, down)
+			}
+		}
+
+		serialized := serializePaths(newPaths)
+		slices.Sort(serialized)
+		compacted := slices.Compact(serialized)
+		deserialized := deserializePaths(compacted)
+		paths = deserialized
+
+	}
+
+	fmt.Println("part two:", len(paths))
+}
+
+func day7Beam(filename string) {
+	input := getInput(filename)
+
+	const start = 'S'
+	const splitter = '^'
+	const empty = '.'
+	const beam = '|'
+
+	grid := Grid{}
+
+	for i, line := range strings.Split(input, "\n") {
+		if i == 0 {
+			grid.Width = len(line)
+		}
+		grid.Height = i
+
+		for _, ch := range line {
+			if ch == start {
+				ch = beam
+			}
+			grid.Points = append(grid.Points, ch)
+		}
+	}
+
+	splits := 0
+
+	for y := range grid.Height - 1 {
+		for x := 0; x < grid.Width; x++ {
+			current := grid.ValueAt(x, y)
+
+			if current == beam {
+				below := grid.ValueAt(x, y+1)
+				if below == empty {
+					grid.SetAt(x, y+1, beam)
+				} else if below == splitter {
+					if x > 0 {
+						grid.SetAt(x-1, y+1, beam)
+					}
+					if x < grid.Width-2 {
+						grid.SetAt(x+1, y+1, beam)
+					}
+					splits++
+				}
+			}
+		}
+	}
+
+	grid.Print()
+
+	fmt.Println("part one:", splits)
 }
 
 func day6(samplefile string, inputfile string) {
