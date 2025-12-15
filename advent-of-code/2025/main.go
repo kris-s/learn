@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -116,6 +117,8 @@ func main() {
 		day6("d6s.input", "d6i.input")
 	case 7:
 		day7("d7s.input", "d7i.input")
+	case 8:
+		day8("d8s.input", "d8i.input")
 	default:
 		fmt.Println("Invalid day choice:", *dayChoice)
 	}
@@ -127,6 +130,26 @@ type Range struct {
 
 type Point struct {
 	X, Y int
+}
+
+type Point3 struct {
+	X, Y, Z int
+}
+
+type Point3Pair struct {
+	A, B     Point3
+	Distance float64
+}
+
+func (p Point3) Distance(other Point3) float64 {
+	a := absInt(p.X - other.X)
+	a *= a
+	b := absInt(p.Y - other.Y)
+	b *= b
+	c := absInt(p.Z - other.Z)
+	c *= c
+
+	return math.Sqrt(float64(a + b + c))
 }
 
 type Grid struct {
@@ -200,6 +223,116 @@ func (g *Grid) Print() {
 	}
 }
 
+func day8(samplefile string, inputfile string) {
+	// 40
+	day8Connections(samplefile, 10)
+	// 5472 is too low
+	day8Connections(inputfile, 1000)
+}
+
+func day8Connections(filename string, count int) {
+	input := getInput(filename)
+
+	points := []Point3{}
+
+	for _, line := range strings.Split(input, "\n") {
+		if len(line) == 0 {
+			continue
+		}
+		values := strings.Split(line, ",")
+		point := Point3{
+			X: intOrPanic(values[0]),
+			Y: intOrPanic(values[1]),
+			Z: intOrPanic(values[2]),
+		}
+
+		points = append(points, point)
+	}
+
+	connections := []Point3Pair{}
+
+	for i := range points {
+		for j := i; j < len(points); j++ {
+			if i == j {
+				continue
+			}
+			conn := Point3Pair{
+				A:        points[i],
+				B:        points[j],
+				Distance: points[i].Distance(points[j]),
+			}
+			connections = append(connections, conn)
+		}
+	}
+
+	slices.SortFunc(connections, func(a, b Point3Pair) int {
+		return cmp.Compare(a.Distance, b.Distance)
+	})
+
+	wiredJunctions := [][]Point3{}
+
+	madeConnections := 0
+
+	for loop, conn := range connections {
+		if madeConnections > count {
+			break
+		}
+
+		shouldMakeNewConnection := true
+
+		for i := range wiredJunctions {
+
+			if slices.Contains(wiredJunctions[i], conn.A) {
+				if slices.Contains(wiredJunctions[i], conn.B) {
+					fmt.Println("< connection already exists >", conn.A, conn.B)
+					shouldMakeNewConnection = false
+					break
+				} else {
+					wiredJunctions[i] = append(wiredJunctions[i], conn.B)
+					madeConnections++
+					shouldMakeNewConnection = false
+					fmt.Println("adding:", conn.A, "to", conn.B, "distance", conn.Distance, "loop", loop)
+					break
+				}
+			} else if slices.Contains(wiredJunctions[i], conn.B) {
+				if slices.Contains(wiredJunctions[i], conn.A) {
+					fmt.Println("< connection already exists >", conn.A, conn.B)
+					shouldMakeNewConnection = false
+					break
+				} else {
+					wiredJunctions[i] = append(wiredJunctions[i], conn.A)
+					madeConnections++
+					fmt.Println("adding:", conn.A, "to", conn.B, "distance", conn.Distance, "loop", loop)
+					shouldMakeNewConnection = false
+					break
+				}
+			}
+		}
+
+		if shouldMakeNewConnection {
+			fmt.Println("new connection:", conn.A, "to", conn.B, "distance", conn.Distance, "loop", loop)
+			newGroup := []Point3{conn.A, conn.B}
+			wiredJunctions = append(wiredJunctions, newGroup)
+			madeConnections++
+		}
+
+	}
+
+	slices.SortFunc(wiredJunctions, func(a, b []Point3) int {
+		return cmp.Compare(len(b), len(a))
+	})
+
+	// for _, wj := range wiredJunctions {
+	// 	fmt.Println(wj)
+	// }
+
+	a := len(wiredJunctions[0])
+	b := len(wiredJunctions[1])
+	c := len(wiredJunctions[2])
+
+	fmt.Println("part one:", a*b*c, a, b, c)
+}
+
 func day7(samplefile string, inputfile string) {
 	// 21
 	day7Beam(samplefile)
@@ -209,7 +342,6 @@ func day7(samplefile string, inputfile string) {
 	day7QuantumBeam(samplefile)
 	// 47274292756692
 	day7QuantumBeam(inputfile)
-
 }
 
 func day7QuantumBeam(filename string) {
